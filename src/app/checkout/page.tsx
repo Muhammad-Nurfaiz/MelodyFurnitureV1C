@@ -101,10 +101,6 @@ export default function CheckoutPage() {
                                 <span>Ongkos Kirim (Kargo)</span>
                                 <span className="text-textDark font-semibold">Rp 150.000</span>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span>Pajak (PPN 11%)</span>
-                                <span className="text-textDark font-semibold">Rp 264.000</span>
-                            </div>
                         </div>
                         
                         <hr className="border-border-subtle" />
