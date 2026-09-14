@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+/* 1. Mendaftarkan Tema Warna Melody Furniture langsung ke Engine Tailwind v4 */
+@theme {
+  /* --- Shop Theme Colors --- */
+  --color-primary: #111d3d;
+  --color-secondary: #E14D2A;
+  --color-bgLight: #F8F9FA;
+  --color-textDark: #212529;
+  --color-textMuted: #6C757D;
+  --color-borderColor: #E9ECEF;
+
+  /* --- Admin & Extended Theme Colors --- */
+  --color-surface-container-high: #dde9ff;
+  --color-bg-alt: #F8FAFC;
+  --color-surface-container-low: #eff4ff;
+  --color-error-container: #ffdad6;
+  --color-on-tertiary-fixed: #301400;
+  --color-secondary-container: #fd6c22;
+  --color-primary-container: #0f2c59;
+  --color-surface-tint: #465e8e;
+  --color-tertiary: #2c1100;
+  --color-surface: #f8f9ff;
+  --color-on-tertiary-container: #c5875a;
+  --color-tertiary-container: #4b2200;
+  --color-on-secondary-fixed-variant: #7d2d00;
+  --color-on-secondary-fixed: #360f00;
+  --color-surface-container-lowest: #ffffff;
+  --color-inverse-primary: #aec7fd;
+  --color-background: #f8f9ff;
+  --color-surface-container-highest: #d5e3fd;
+  --color-bg-main: #FFFFFF;
+  --color-on-error: #ffffff;
+  --color-surface-container: #e6eeff;
+  --color-secondary-fixed-dim: #ffb597;
+  --color-brand-blue-dark: #0A1E3D;
+  --color-on-primary-fixed: #001a41;
+  --color-primary-fixed: #d8e2ff;
+  --color-on-primary-container: #7c94c8;
+  --color-surface-variant: #d5e3fd;
+  --color-tertiary-fixed: #ffdcc6;
+  --color-outline: #747780;
+  --color-tertiary-fixed-dim: #fdb787;
+  --color-on-error-container: #93000a;
+  --color-on-secondary-container: #591d00;
+  --color-inverse-surface: #233144;
+  --color-surface-bright: #f8f9ff;
+  --color-on-surface-variant: #44474f;
+  --color-outline-variant: #c4c6d0;
+  --color-on-tertiary-fixed-variant: #6a3b15;
+  --color-primary-fixed-dim: #aec7fd;
+  --color-on-primary-fixed-variant: #2d4674;
+  --color-border-subtle: #E2E8F0;
+  --color-on-primary: #ffffff;
+  --color-secondary-fixed: #ffdbcd;
+  --color-on-background: #0d1c2f;
+  --color-error: #ba1a1a;
+  --color-inverse-on-surface: #ebf1ff;
+  --color-on-tertiary: #ffffff;
+  --color-on-surface: #0d1c2f;
+  --color-surface-dim: #ccdbf4;
+  --color-on-secondary: #ffffff;
+
+  /* Font Families */
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", "Inter", sans-serif;
+}
+
+/* 2. Base Typography & Resets */
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  color: #212529;
+  background-color: #ffffff;
+}
+
+h1, h2, h3, h4, th {
+  font-family: var(--font-heading);
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+/* 3. Custom Utilities & Product Cards */
+@keyframes melody-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes melody-img-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+img.melody-img-loading {
+  color: transparent;
+  background-color: #f3f4f6;
+  background-image: linear-gradient(90deg, #f3f4f6 0%, #e6e7eb 45%, #f3f4f6 90%);
+  background-size: 200% 100%;
+  animation: melody-shimmer 1.3s linear infinite;
+  min-height: 48px;
+}
+
+img.melody-img-ready {
+  animation: melody-img-fade 0.35s ease both;
+}
+
+.melody-skel {
+  background-color: #f3f4f6;
+  background-image: linear-gradient(90deg, #f3f4f6 0%, #e6e7eb 45%, #f3f4f6 90%);
+  background-size: 200% 100%;
+  animation: melody-shimmer 1.3s linear infinite;
+  border-radius: 8px;
+}
+
+.product-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e9ecef !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 30px -16px rgba(16, 24, 40, 0.15);
+  border-color: rgba(16, 24, 40, 0.12) !important;
+}
+
+.product-card > img,
+.product-card .product-card__media img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: #fafafa;
+  transition: transform 0.45s ease;
+}
+
+.product-card:hover > img,
+.product-card:hover .product-card__media img {
+  transform: scale(1.05);
+}
+
+.product-card .product-card__media {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-card h3 {
+  letter-spacing: -0.01em;
+}

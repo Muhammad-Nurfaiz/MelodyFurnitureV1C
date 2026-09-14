@@ -1,0 +1,134 @@
+/**
+ * Konfigurasi tema Tailwind asli dari tiap halaman Melody Furniture.
+ * Dipertahankan persis seperti pada versi HTML statis agar warna,
+ * radius, dan tipografi tidak berubah sedikit pun.
+ */
+export const shopTheme = {
+  theme: {
+    extend: {
+      colors: {
+        primary: "#111d3d",
+        secondary: "#E14D2A",
+        bgLight: "#F8F9FA",
+        textDark: "#212529",
+        textMuted: "#6C757D",
+        borderColor: "#E9ECEF",
+      },
+    },
+  },
+};
+
+export const adminTheme = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "surface-container-high": "#dde9ff",
+        "bg-alt": "#F8FAFC",
+        "surface-container-low": "#eff4ff",
+        "error-container": "#ffdad6",
+        "on-tertiary-fixed": "#301400",
+        "secondary-container": "#fd6c22",
+        "primary-container": "#0f2c59",
+        "surface-tint": "#465e8e",
+        tertiary: "#2c1100",
+        surface: "#f8f9ff",
+        "on-tertiary-container": "#c5875a",
+        "tertiary-container": "#4b2200",
+        "on-secondary-fixed-variant": "#7d2d00",
+        "on-secondary-fixed": "#360f00",
+        "surface-container-lowest": "#ffffff",
+        "inverse-primary": "#aec7fd",
+        background: "#f8f9ff",
+        "surface-container-highest": "#d5e3fd",
+        "bg-main": "#FFFFFF",
+        "on-error": "#ffffff",
+        "surface-container": "#e6eeff",
+        "secondary-fixed-dim": "#ffb597",
+        secondary: "#a43d00",
+        "brand-blue-dark": "#0A1E3D",
+        "on-primary-fixed": "#001a41",
+        "primary-fixed": "#d8e2ff",
+        "on-primary-container": "#7c94c8",
+        "surface-variant": "#d5e3fd",
+        "tertiary-fixed": "#ffdcc6",
+        outline: "#747780",
+        "tertiary-fixed-dim": "#fdb787",
+        "on-error-container": "#93000a",
+        "on-secondary-container": "#591d00",
+        "inverse-surface": "#233144",
+        "surface-bright": "#f8f9ff",
+        "on-surface-variant": "#44474f",
+        "outline-variant": "#c4c6d0",
+        "on-tertiary-fixed-variant": "#6a3b15",
+        "primary-fixed-dim": "#aec7fd",
+        "on-primary-fixed-variant": "#2d4674",
+        "border-subtle": "#E2E8F0",
+        "on-primary": "#ffffff",
+        "secondary-fixed": "#ffdbcd",
+        "on-background": "#0d1c2f",
+        error: "#ba1a1a",
+        "inverse-on-surface": "#ebf1ff",
+        "on-tertiary": "#ffffff",
+        primary: "#00173b",
+        "on-surface": "#0d1c2f",
+        "surface-dim": "#ccdbf4",
+        "on-secondary": "#ffffff",
+      },
+      borderRadius: {
+        DEFAULT: "0.25rem",
+        lg: "0.5rem",
+        xl: "0.75rem",
+        full: "9999px",
+      },
+      spacing: {
+        "margin-mobile": "16px",
+        "container-max": "1280px",
+        unit: "8px",
+        "margin-desktop": "40px",
+        gutter: "24px",
+      },
+      fontFamily: {
+        "price-lg": ["Inter"],
+        "headline-md": ["Plus Jakarta Sans"],
+        "body-lg": ["Inter"],
+        "headline-lg-mobile": ["Plus Jakarta Sans"],
+        "display-lg": ["Plus Jakarta Sans"],
+        "body-md": ["Inter"],
+        "label-sm": ["Inter"],
+        "headline-sm": ["Plus Jakarta Sans"],
+        "headline-lg": ["Plus Jakarta Sans"],
+        "Plus-Jakarta": ["Plus Jakarta Sans"],
+      },
+      fontSize: {
+        "price-lg": ["20px", { lineHeight: "24px", fontWeight: "600" }],
+        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+        "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "700" }],
+        "display-lg": [
+          "48px",
+          { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" },
+        ],
+        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        "label-sm": [
+          "14px",
+          { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "500" },
+        ],
+        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+        "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+      },
+    },
+  },
+};
+
+export const themes = { shop: shopTheme, admin: adminTheme } as const;
+
+export function applyTailwindTheme(name: keyof typeof themes) {
+  // Cek apakah kode berjalan di browser (Client-side)
+  if (typeof window === "undefined") return;
+
+  const w = window as unknown as { tailwind?: { config: unknown } };
+  if (w.tailwind) {
+    w.tailwind.config = themes[name];
+  }
+}
