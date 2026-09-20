@@ -30,3 +30,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js build output
+.next/
+
+# TypeScript incremental build info
+tsconfig.tsbuildinfo
