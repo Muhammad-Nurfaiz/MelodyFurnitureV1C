@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Order Tracking | Melody Furniture",
   description: "Melody Furniture - furnitur rumah minimalis berkualitas.",
+  icons: {
+    icon: "favicon.ico",
+  },
   openGraph: {
     title: "Order Tracking | Melody Furniture",
     description: "Melody Furniture - furnitur rumah minimalis berkualitas.",

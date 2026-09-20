@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { GuestSessionProvider } from "@/components/GuestSessionProvider";
 
 export const metadata: Metadata = {
   title: "Melody Furniture | Toko Mebel & Furnitur Rumah Minimalis",
@@ -71,9 +72,9 @@ export default function RootLayout({
         {/* Tailwind CDN (tema di-inject via script di bawah) */}
         {/* Inject default shop theme sebelum Tailwind CDN dijalankan */}
         <script dangerouslySetInnerHTML={{ __html: TAILWIND_THEME_SCRIPT }} />
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="icon" href="favicon.ico" type="image/x-icon" />
       </head>
-      <body>{children}</body>
+      <body><GuestSessionProvider>{children}</GuestSessionProvider></body>
     </html>
   );
 }

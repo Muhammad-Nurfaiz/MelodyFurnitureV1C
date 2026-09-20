@@ -2,16 +2,62 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { DesktopNavLinks, MobileNavToggle } from "./SiteNav";
+import { initGuestSession } from "@/lib/guestSession";
 
 interface NavbarProps {
   cartCount?: number;
 }
 
-export function Navbar({ cartCount = 3 }: NavbarProps) {
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [totalItems, setTotalItems] = useState<number>(initialCartCount ?? 0);
+
+  // Fetch Total Item dari API Cart
+  const fetchCartCount = async () => {
+    try {
+      let guestToken = typeof window !== "undefined" ? localStorage.getItem("guest_session_id") : null;
+      if (!guestToken) {
+        guestToken = await initGuestSession();
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/cart`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          ...(guestToken && { "X-Guest-Session-Id": guestToken }),
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        // Mengutamakan total_items
+        const count = json.data?.total_items ?? json.data?.items?.length ?? 0;
+        setTotalItems(count);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil jumlah item keranjang:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCartCount();
+
+    // Listen event kustom 'cart-updated'
+    const handleCartUpdated = () => {
+      fetchCartCount();
+    };
+
+    window.addEventListener("cart-updated", handleCartUpdated);
+
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdated);
+    };
+  }, []);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -83,12 +129,16 @@ export function Navbar({ cartCount = 3 }: NavbarProps) {
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
               />
             </svg>
-            <span
-              id="cartBadge"
-              className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-secondary rounded-full transform translate-x-1 -translate-y-0.5 min-w-[18px]"
-            >
-              {cartCount}
-            </span>
+
+            {/* Badge hanya tampil jika totalItems > 0 */}
+            {totalItems > 0 && (
+              <span
+                id="cartBadge"
+                className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-secondary rounded-full transform translate-x-1 -translate-y-0.5 min-w-[18px]"
+              >
+                {totalItems}
+              </span>
+            )}
           </Link>
         </div>
       </div>

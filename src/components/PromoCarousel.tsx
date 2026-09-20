@@ -3,16 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Interface disesuaikan dengan skema JSON dari API
 export interface PromoBanner {
   id: string;
   image: string;
-  url: string;
-  alt: string;
+  url?: string;
+  alt?: string;
   sort_order: number;
 }
 
-// Data Dummy Banner menggunakan Placeholder dengan rasio 2:1 (600x300)
 const DUMMY_BANNERS: PromoBanner[] = [
   {
     id: "019fd78e-3e39-716a-ba9d-afaf49d10646",
@@ -28,21 +26,29 @@ const DUMMY_BANNERS: PromoBanner[] = [
     alt: "Gratis Ongkir Se-Indonesia",
     sort_order: 2,
   },
-  {
-    id: "019fd782-e676-7033-bd73-617822a73dc9",
-    image: "https://placehold.co/600x300/0F766E/FFFFFF/png?text=Flash+Sale+Furnitur",
-    url: "/events",
-    alt: "Flash Sale Furnitur",
-    sort_order: 3,
-  },
-  {
-    id: "019fd782-e676-7033-bd73-617822a73dca",
-    image: "https://placehold.co/600x300/4E46E5/FFFFFF/png?text=Cicilan+0%25+12+Bulan",
-    url: "/events",
-    alt: "Cicilan 0%",
-    sort_order: 4,
-  },
 ];
+
+// Helper untuk normalisasi URL Gambar
+function getStorageUrl(path: string | undefined): string {
+  if (!path) return "/placeholder-image.webp";
+
+  // 1. Unescape backslash (misal: \/storage\/... -> /storage/...)
+  let cleanPath = path.replace(/\\/g, "");
+
+  // 2. Jika sudah berupa URL absolut (http/https), langsung kembalikan
+  if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
+    return cleanPath;
+  }
+
+  // 3. Pastikan path diawali dengan slash /
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = `/${cleanPath}`;
+  }
+
+  // 4. Gabungkan dengan NEXT_PUBLIC_API_URL jika domain API terpisah (opsional)
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  return `${baseUrl}${cleanPath}`;
+}
 
 function groupBanners(banners: PromoBanner[], perSlide: number): PromoBanner[][] {
   const out: PromoBanner[][] = [];
@@ -79,19 +85,23 @@ function PromoSkeleton({ perSlide, slidesCount }: { perSlide: number; slidesCoun
 
 interface PromoCarouselProps {
   banners?: PromoBanner[];
+  data?: PromoBanner[]; // Mendukung penggunaan prop data
 }
 
-export function PromoCarousel({ banners = DUMMY_BANNERS }: PromoCarouselProps) {
+export function PromoCarousel({ banners, data }: PromoCarouselProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const isMobile = useIsMobile();
   const perSlide = isMobile ? 1 : 2;
 
-  // Mengurutkan data berdasarkan sort_order jika ada
+  // Fallback menerima `data` atau `banners`, default ke DUMMY_BANNERS
+  const rawBanners = data ?? banners ?? DUMMY_BANNERS;
+
   const sortedBanners = useMemo(() => {
-    return [...banners].sort((a, b) => a.sort_order - b.sort_order);
-  }, [banners]);
+    if (!Array.isArray(rawBanners)) return [];
+    return [...rawBanners].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }, [rawBanners]);
 
   const slides = useMemo(
     () => groupBanners(sortedBanners, perSlide),
@@ -120,7 +130,6 @@ export function PromoCarousel({ banners = DUMMY_BANNERS }: PromoCarouselProps) {
     [slides.length]
   );
 
-  // Auto-play 15 detik
   useEffect(() => {
     if (!ready || slides.length <= 1) return;
 
@@ -227,7 +236,7 @@ export function PromoCarousel({ banners = DUMMY_BANNERS }: PromoCarouselProps) {
                   }`}
                 >
                   <img
-                    src={banner.image}
+                    src={getStorageUrl(banner.image)}
                     alt={banner.alt || "Banner Promo"}
                     className="w-full h-auto aspect-[2/1] object-cover rounded-lg group-hover:scale-[1.01] transition-transform duration-300"
                   />

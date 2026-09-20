@@ -9,37 +9,72 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ChatWidget } from "@/components/ChatWidget";
 
-// Daftar kode resi dummy yang valid
-const VALID_TRACKING_CODES = ["MF-889021", "MF-123456", "MF-999999"];
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
 
 export default function TrackSearchPage() {
   const router = useRouter();
+
   const [searchCode, setSearchCode] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const cleanedCode = searchCode.trim().toUpperCase();
+
     if (!cleanedCode) return;
 
     setIsSearching(true);
     setErrorMessage("");
 
-    // Jeda 3 detik untuk mengecek keberadaan kode tracking
-    setTimeout(() => {
-      setIsSearching(false);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/tracking/${encodeURIComponent(cleanedCode)}`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        }
+      );
 
-      if (VALID_TRACKING_CODES.includes(cleanedCode)) {
-        // Jika kode ditemukan, redirect ke halaman track
-        router.push("/track");
-      } else {
-        // Jika tidak ditemukan, munculkan pesan kesalahan dalam box merah
-        setErrorMessage(
-          `Kode resi atau nomor transaksi "${searchCode}" tidak ditemukan. Silakan periksa kembali kode Anda.`
-        );
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(
+            `Kode pesanan "${searchCode.trim()}" tidak ditemukan. Silakan periksa kembali kode Anda.`
+          );
+        }
+
+        let message =
+          "Terjadi kesalahan saat mencari pesanan. Silakan coba lagi.";
+
+        try {
+          const result = await response.json();
+
+          if (result?.message) {
+            message = result.message;
+          }
+        } catch {
+          // Response bukan JSON.
+        }
+
+        throw new Error(message);
       }
-    }, 3000);
+
+      router.push(
+        `/track?tracking_token=${encodeURIComponent(cleanedCode)}`
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Kode pesanan tidak ditemukan. Silakan periksa kembali kode Anda."
+      );
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -52,40 +87,48 @@ export default function TrackSearchPage() {
       dataAttrs={{}}
     >
       <Navbar />
+
       <main className="flex-grow py-6 sm:py-10 md:py-14 px-4 sm:px-6 md:px-8 max-w-lg md:max-w-2xl mx-auto w-full relative z-10">
         <div className="space-y-6 sm:space-y-8">
-          
+
           {/* Header & Judul */}
           <div className="text-center space-y-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
               Lacak Pesanan Anda
             </h1>
+
             <p className="text-xs sm:text-sm text-textMuted max-w-md mx-auto font-medium">
-              Masukkan No. Resi atau Kode Transaksi untuk memantau perjalanan furniture pesanan Anda secara real-time.
+              Masukkan kode pesanan untuk memantau status dan perjalanan pesanan furniture Anda secara real-time.
             </p>
           </div>
 
-          <p className="font-bold text-center text-primary text-xs sm:text-sm">Gunakan kode ini untuk uji test : <span className="font-bold text-center text-primary text-xs sm:text-sm">"MF-889021"</span></p>
-
           {/* Form Input Kode Tracking */}
           <div className="bg-white border border-border-subtle rounded-2xl p-4 sm:p-6 minimal-shadow space-y-4">
-            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+            <form
+              onSubmit={handleSearch}
+              className="flex flex-col sm:flex-row gap-3"
+            >
               <div className="relative flex-1">
                 <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-textMuted text-[20px]">
                   search
                 </span>
+
                 <input
                   type="text"
                   value={searchCode}
                   onChange={(e) => {
                     setSearchCode(e.target.value);
-                    if (errorMessage) setErrorMessage("");
+
+                    if (errorMessage) {
+                      setErrorMessage("");
+                    }
                   }}
-                  placeholder="Masukkan Kode Resi (contoh: MF-889021)..."
+                  placeholder="Masukkan Kode Pesanan (contoh: 01M2Z214GTV5QTS...)"
                   className="w-full pl-10 pr-4 py-3 bg-bg-alt border border-border-subtle rounded-xl text-xs sm:text-sm font-semibold text-primary placeholder:text-textMuted/70 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   required
                 />
               </div>
+
               <button
                 type="submit"
                 disabled={isSearching}
@@ -94,12 +137,14 @@ export default function TrackSearchPage() {
                 {isSearching ? (
                   <>
                     <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    <span>Mencari (3s)...</span>
+                    <span>Mencari...</span>
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[18px]">local_shipping</span>
-                    <span>Lacak Resi</span>
+                    <span className="material-symbols-outlined text-[18px]">
+                      local_shipping
+                    </span>
+                    <span>Lacak Pesanan</span>
                   </>
                 )}
               </button>
@@ -111,6 +156,7 @@ export default function TrackSearchPage() {
                 <span className="material-symbols-outlined text-rose-600 text-[20px] shrink-0 mt-0.5">
                   error
                 </span>
+
                 <p className="font-medium leading-relaxed">
                   {errorMessage}
                 </p>
@@ -130,6 +176,7 @@ export default function TrackSearchPage() {
 
         </div>
       </main>
+
       <Footer />
       <ChatWidget />
     </LegacyPage>

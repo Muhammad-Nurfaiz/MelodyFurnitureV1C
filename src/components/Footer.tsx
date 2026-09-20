@@ -1,10 +1,11 @@
 'use client';
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChatWidget } from "./ChatWidget";
 
-// Interface untuk data sosial media dari API JSON
-interface SocialMediaLinks {
+// Interface data sosial media dari API
+export interface SocialMediaLinks {
   instagram_url: string | null;
   facebook_url: string | null;
   tiktok_url: string | null;
@@ -12,17 +13,11 @@ interface SocialMediaLinks {
   whatsapp_url: string | null;
 }
 
-// Dummy data dari API JSON (bisa diubah untuk pengujian null/isi)
-const dummyApiResponse = {
-  success: true,
-  data: {
-    instagram_url: "https://instagram.com/melodyfurniture",
-    facebook_url: "https://facebook.com/melodyfurniture",
-    tiktok_url: "https://tiktok.com/@melodyfurniture", // Menguji penanganan null (icon tidak akan dirender)
-    youtube_url: "https://youtube.com/@melodyfurniture",
-    whatsapp_url: null,
-  } as SocialMediaLinks,
-};
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  data: SocialMediaLinks;
+}
 
 const PAYMENT_METHODS = [
   { name: "American Express", src: "/assets/img/american.webp" },
@@ -40,7 +35,6 @@ const PAYMENT_METHODS = [
   { name: "Visa", src: "/assets/img/visa.webp" },
 ];
 
-// Map SVG Icon berdasarkan platform sosial media
 const SOCIAL_ICONS: Record<keyof SocialMediaLinks, { name: string; icon: React.ReactNode }> = {
   instagram_url: {
     name: "Instagram",
@@ -85,12 +79,40 @@ const SOCIAL_ICONS: Record<keyof SocialMediaLinks, { name: string; icon: React.R
 };
 
 export function Footer() {
-  const socialData = dummyApiResponse.data;
+  const [socialData, setSocialData] = useState<SocialMediaLinks | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Filter hanya entry yang nilainya string (tidak null dan tidak kosong)
-  const activeSocials = (Object.entries(socialData) as [keyof SocialMediaLinks, string | null][]).filter(
-    ([_, url]) => url !== null && url.trim() !== ""
-  );
+  useEffect(() => {
+    const fetchSocialMedia = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
+        const res = await fetch(`${baseUrl}/home/social-media`, {
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        if (!res.ok) throw new Error("Gagal mengambil data sosial media");
+
+        const result: ApiResponse = await res.json();
+        if (result.success && result.data) {
+          setSocialData(result.data);
+        }
+      } catch (err) {
+        console.error("Error fetching social media:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSocialMedia();
+  }, []);
+
+  const activeSocials = socialData
+    ? (Object.entries(socialData) as [keyof SocialMediaLinks, string | null][]).filter(
+        ([_, url]) => url !== null && url.trim() !== ""
+      )
+    : [];
 
   return (
     <>
@@ -103,29 +125,35 @@ export function Footer() {
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="/about" className="text-textMuted hover:text-secondary transition">
+                <Link href="/about" className="text-textMuted hover:text-secondary transition">
                   Tentang Kami
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/shipping-policy" className="text-textMuted hover:text-secondary transition">
+                <Link href="/shipping-policy" className="text-textMuted hover:text-secondary transition">
                   Kebijakan Pengiriman
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/privacy-policy" className="text-textMuted hover:text-secondary transition">
+                <Link href="/privacy-policy" className="text-textMuted hover:text-secondary transition">
                   Kebijakan Privasi
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Kolom 2: Sosial Media (Dinamis dari API JSON) */}
+          {/* Kolom 2: Sosial Media */}
           <div>
             <h4 className="text-textDark font-bold uppercase mb-4 text-xs tracking-wider">
               Ikuti Kami
             </h4>
-            {activeSocials.length > 0 ? (
+            {loading ? (
+              <div className="flex gap-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="w-9 h-9 bg-gray-200 rounded-full animate-pulse" />
+                ))}
+              </div>
+            ) : activeSocials.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {activeSocials.map(([key, url]) => {
                   const item = SOCIAL_ICONS[key];
