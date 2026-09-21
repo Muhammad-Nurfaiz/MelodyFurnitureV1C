@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from "react";
 import { LegacyPage } from "@/components/LegacyPage";
 import { ShippingAddressForm } from "@/components/ShippingAddressForm";
 import {
@@ -225,41 +226,42 @@ export default function CheckoutPage() {
             </div>
         </div>
 
-        
-        <CheckoutProvider>
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
-            
-            <div className="w-full lg:w-[65%] space-y-6">
+        <Suspense fallback={null}>
+          <CheckoutProvider>
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
                 
-                
-                <section id="alamat-pengiriman" className="bg-white industrial-border p-6 md:p-8 rounded-xl shadow-sm">
-                    <div className="flex items-center gap-3 mb-6 border-b border-borderColor pb-4">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            <span className="material-symbols-outlined font-semibold">local_shipping</span>
-                        </div>
-                        <h2 className="text-lg md:text-xl font-bold text-textDark">Alamat Pengiriman</h2>
-                    </div>
+                <div className="w-full lg:w-[65%] space-y-6">
                     
-                    <ShippingAddressForm />
-
-                </section>
-
-                
-                <section className="bg-white industrial-border p-6 md:p-8 rounded-xl shadow-sm">
-                    <div className="flex items-center gap-3 mb-6 border-b border-borderColor pb-4">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            <span className="material-symbols-outlined font-semibold">inventory_2</span>
-                        </div>
-                        <h2 className="text-lg md:text-xl font-bold text-textDark">Metode Pengiriman</h2>
-                    </div>
                     
-                    <ShippingMethodOptions />
-                </section>
+                    <section id="alamat-pengiriman" className="bg-white industrial-border p-6 md:p-8 rounded-xl shadow-sm">
+                        <div className="flex items-center gap-3 mb-6 border-b border-borderColor pb-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                <span className="material-symbols-outlined font-semibold">local_shipping</span>
+                            </div>
+                            <h2 className="text-lg md:text-xl font-bold text-textDark">Alamat Pengiriman</h2>
+                        </div>
+                        
+                        <ShippingAddressForm />
 
+                    </section>
+
+                    
+                    <section className="bg-white industrial-border p-6 md:p-8 rounded-xl shadow-sm">
+                        <div className="flex items-center gap-3 mb-6 border-b border-borderColor pb-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                <span className="material-symbols-outlined font-semibold">inventory_2</span>
+                            </div>
+                            <h2 className="text-lg md:text-xl font-bold text-textDark">Metode Pengiriman</h2>
+                        </div>
+                        
+                        <ShippingMethodOptions />
+                    </section>
+
+                </div>
+                <CheckoutSummary />
             </div>
-            <CheckoutSummary />
-        </div>
-        </CheckoutProvider>
+          </CheckoutProvider>
+        </Suspense>
     </main>
 
     <Footer/>

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LegacyPage } from "@/components/LegacyPage";
 import { css, js } from "@/legacy/payment.legacy";
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const searchParams = useSearchParams();
   const trackingToken = searchParams.get("tracking_token");
   const fromMidtrans = searchParams.get("from_midtrans") === "1";
@@ -492,5 +492,13 @@ export default function PaymentPage() {
         </div>
       </main>
     </LegacyPage>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={null}>
+      <PaymentPageContent />
+    </Suspense>
   );
 }

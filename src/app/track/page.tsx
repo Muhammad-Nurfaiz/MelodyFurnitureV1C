@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { LegacyPage } from "@/components/LegacyPage";
 import { runInline } from "@/lib/legacy-runtime";
@@ -217,7 +217,7 @@ function isTimelineActive(
   return index === 0;
 }
 
-export default function TrackPage() {
+function TrackPageContent() {
   const searchParams = useSearchParams();
   const trackingToken = searchParams.get("tracking_token");
 
@@ -1009,5 +1009,13 @@ export default function TrackPage() {
         </div>
       )}
     </LegacyPage>
+  );
+}
+
+export default function TrackPage() {
+  return (
+    <Suspense fallback={null}>
+      <TrackPageContent />
+    </Suspense>
   );
 }
