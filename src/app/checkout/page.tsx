@@ -16,7 +16,7 @@ import { ChatWidget } from "@/components/ChatWidget";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://187.53.138.70:8081/api";
 const BACKEND_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
 
 function CheckoutSummary() {

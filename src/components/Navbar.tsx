@@ -10,7 +10,7 @@ interface NavbarProps {
   cartCount?: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
 
 export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
   const router = useRouter();

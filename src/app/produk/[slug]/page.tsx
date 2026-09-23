@@ -24,7 +24,7 @@ import { Product, CategoryOrSeries } from "@/types";
 import { getProductDetail, getProductRecommendations } from "@/services/api";
 import type { ReactNode } from "react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
 
 function getSeriesInfo(series?: CategoryOrSeries | string | null) {
   if (!series) return null;
