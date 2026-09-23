@@ -15,11 +15,12 @@ export function ProductCard({ product }: { product: Product }) {
       href={`/produk/${product.slug || ""}`}
       className="product-card bg-white rounded-lg overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg border border-transparent hover:border-secondary shadow-sm flex flex-col justify-between group relative"
     >
-      <div className="relative w-full h-44 overflow-hidden bg-[#FAFAFA]">
+      {/* Container Gambar Rasio 1:1 */}
+      <div className="relative w-full aspect-square overflow-hidden bg-[#FAFAFA]">
         <img
           src={thumbnailUrl}
           alt={product.thumbnail?.alt_text || product.name || "Produk"}
-          className="w-full h-full object-fit"
+          className="w-full h-full object-contain p-2"
         />
 
         {product.is_sale && (
