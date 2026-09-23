@@ -46,7 +46,7 @@ function getStorageUrl(path: string | undefined): string {
   }
 
   // 4. Gabungkan dengan NEXT_PUBLIC_API_URL jika domain API terpisah (opsional)
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
   return `${baseUrl}${cleanPath}`;
 }
 
