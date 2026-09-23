@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { CategoryOrSeriesItem } from "@/types";
 import { FilterPanelSkeleton } from "@/components/ContentSkeleton";
 
@@ -10,11 +10,12 @@ interface FilterSidebarProps {
   selectedCategory: string;
   selectedSeries: string;
   onlySale: boolean;
-  isLoading?: boolean; // Tentukan state loading langsung dari parent/data fetching
+  isLoading?: boolean; // State loading dari parent/data fetching
   onSelectCategory: (slug: string) => void;
   onSelectSeries: (slug: string) => void;
   onToggleSale: (val: boolean) => void;
   onReset: () => void;
+  onClose?: () => void; // Prop opsional untuk menutup sidebar
 }
 
 export function CatalogSidebarFilter({
@@ -28,8 +29,30 @@ export function CatalogSidebarFilter({
   onSelectSeries,
   onToggleSale,
   onReset,
+  onClose,
 }: FilterSidebarProps) {
-  // Cek apakah data masih dalam proses loading atau array categories/seriesList masih kosong
+  // Ref untuk mendeteksi elemen pembungkus sidebar
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Effect untuk mendeteksi klik di luar area sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node) &&
+        onClose
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
+
+  // Cek apakah data masih dalam proses loading atau array categories/seriesList belum siap
   const isDataNotReady = isLoading || !categories || !seriesList;
 
   if (isDataNotReady) {
@@ -37,8 +60,8 @@ export function CatalogSidebarFilter({
   }
 
   return (
-    <>
-      <div className="mb-4">
+    <div ref={sidebarRef} className="w-full">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <button
           onClick={onReset}
           className="btn-reset-filter w-full py-1.5 border border-dashed border-secondary text-secondary hover:bg-secondary hover:text-white rounded text-xs font-semibold transition"
@@ -120,6 +143,6 @@ export function CatalogSidebarFilter({
           />
         </label>
       </div>
-    </>
+    </div>
   );
 }

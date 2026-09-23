@@ -150,7 +150,7 @@ function CheckoutSummary() {
             Dengan mengeklik tombol di atas, Anda telah menyetujui seluruh{" "}
             <a
               className="underline text-primary hover:text-opacity-80"
-              href="#"
+              href="/terms-conditions"
             >
               Syarat & Ketentuan
             </a>{" "}

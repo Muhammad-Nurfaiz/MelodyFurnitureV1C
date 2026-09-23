@@ -20,28 +20,24 @@ import { CatalogSidebarFilter } from "@/components/CatalogSidebarFilter";
 import { getCatalogMeta, getProducts } from "@/services/api";
 import { Product, CategoryOrSeriesItem } from "@/types";
 
-// Helper untuk mengekstrak cursor secara fleksibel dari berbagai format response API
+// Helper untuk mengekstrak cursor secara fleksibel
 const extractNextCursor = (res: any): string | null => {
   if (!res) return null;
 
-  // 1. Cek dari objek meta
   if (res.meta?.next_cursor) return res.meta.next_cursor;
   if (res.data?.meta?.next_cursor) return res.data.meta.next_cursor;
 
-  // 2. Cek jika backend mengirim links.next (URL) -> ambil query param 'cursor'
   const nextUrl = res.links?.next || res.data?.links?.next;
   if (nextUrl) {
     try {
       const url = new URL(nextUrl);
       return url.searchParams.get("cursor");
     } catch {
-      // Jika nextUrl berupa relative path
       const match = nextUrl.match(/[?&]cursor=([^&]+)/);
       return match ? match[1] : null;
     }
   }
 
-  // 3. Fallback direct property
   return res.next_cursor || res.data?.next_cursor || null;
 };
 
@@ -95,6 +91,19 @@ function CatalogContent() {
   // State Meta Data
   const [categories, setCategories] = useState<CategoryOrSeriesItem[]>([]);
   const [seriesList, setSeriesList] = useState<CategoryOrSeriesItem[]>([]);
+  const [isLoadingMeta, setIsLoadingMeta] = useState<boolean>(true);
+
+  // State Drawer & Input Search Mobile
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Filter State dari URL
+  const selectedCategory = searchParams.get("category") || "";
+  const selectedSeries = searchParams.get("series") || "";
+  const searchQuery = searchParams.get("search") || "";
+  const onlySale = searchParams.get("sale") === "true";
+
+  // Local State Input Search
+  const [mobileSearchInput, setMobileSearchInput] = useState<string>(searchQuery);
 
   // State Produk & Pagination
   const [products, setProducts] = useState<Product[]>([]);
@@ -103,26 +112,22 @@ function CatalogContent() {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Filter State dari URL
-  const selectedCategory = searchParams.get("category") || "";
-  const selectedSeries = searchParams.get("series") || "";
-  const searchQuery = searchParams.get("search") || "";
-  const onlySale = searchParams.get("sale") === "true";
-  const [isLoadingMeta, setIsLoadingMeta] = useState<boolean>(true);
-
-  // Local State UI
-  const [searchInput, setSearchInput] = useState<string>(searchQuery);
+  // Sorting
   const [sortBy, setSortBy] = useState<string>("default");
 
+  // Synchronize Mobile Search Input dengan URL Search Query
+  useEffect(() => {
+    setMobileSearchInput(searchQuery);
+  }, [searchQuery]);
+
+  // Fetch Metadata (Categories & Series)
   useEffect(() => {
     async function fetchMeta() {
       try {
         setIsLoadingMeta(true);
-        // Memanggil fungsi getCatalogMeta yang mengembalikan { categories, seriesList }
         const { categories: fetchedCategories, seriesList: fetchedSeries } = await getCatalogMeta();
-
-        setCategories(fetchedCategories);
-        setSeriesList(fetchedSeries);
+        setCategories(fetchedCategories || []);
+        setSeriesList(fetchedSeries || []);
       } catch (error) {
         console.error("Gagal mengambil meta katalog:", error);
       } finally {
@@ -131,30 +136,6 @@ function CatalogContent() {
     }
 
     fetchMeta();
-  }, []);
-
-  useEffect(() => {
-    setSearchInput(searchQuery);
-  }, [searchQuery]);
-
-  // 1. Fetch Metadata (Categories & Series)
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchMeta() {
-      try {
-        const data = await getCatalogMeta();
-        if (isMounted) {
-          setCategories(data.categories || []);
-          setSeriesList(data.seriesList || []);
-        }
-      } catch (err) {
-        console.error("Gagal mengambil metadata katalog:", err);
-      }
-    }
-    fetchMeta();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   // Helper Update Query Params
@@ -173,7 +154,7 @@ function CatalogContent() {
     [router, pathname, searchParams]
   );
 
-  // 2. Fetch Products berdasarkan Filter URL
+  // Fetch Products berdasarkan Filter URL
   useEffect(() => {
     let isMounted = true;
 
@@ -217,7 +198,13 @@ function CatalogContent() {
     };
   }, [selectedCategory, selectedSeries, searchQuery, onlySale]);
 
-  // 3. Handler Load More
+  // Handler Search Mobile
+  const handleMobileSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateQueryParams({ search: mobileSearchInput.trim() || null });
+  };
+
+  // Handler Load More
   const handleLoadMore = async () => {
     if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
@@ -248,13 +235,24 @@ function CatalogContent() {
     }
   };
 
-  const handleCategoryChange = (cat: string) => updateQueryParams({ category: cat || null });
-  const handleSeriesChange = (series: string) => updateQueryParams({ series: series || null });
-  const handleSaleToggle = (sale: boolean) => updateQueryParams({ sale: sale ? "true" : null });
+  const handleCategoryChange = (cat: string) => {
+    updateQueryParams({ category: cat || null });
+    setIsFilterOpen(false);
+  };
+
+  const handleSeriesChange = (series: string) => {
+    updateQueryParams({ series: series || null });
+    setIsFilterOpen(false);
+  };
+
+  const handleSaleToggle = (sale: boolean) => {
+    updateQueryParams({ sale: sale ? "true" : null });
+  };
 
   const handleReset = () => {
-    setSearchInput("");
+    setMobileSearchInput("");
     setSortBy("default");
+    setIsFilterOpen(false);
     router.replace(pathname, { scroll: false });
   };
 
@@ -298,25 +296,94 @@ function CatalogContent() {
               onSelectSeries={handleSeriesChange}
               onToggleSale={handleSaleToggle}
               onReset={handleReset}
+              onClose={() => setIsFilterOpen(false)}
             />
           </aside>
 
+          {/* MOBILE FILTER DRAWER / MODAL */}
+          {isFilterOpen && (
+            <div className="fixed inset-0 z-50 flex md:hidden bg-black/50 backdrop-blur-sm">
+              <div className="ml-auto w-full max-w-xs bg-white h-full p-5 overflow-y-auto shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-4 border-b border-borderColor mb-4">
+                    <h3 className="font-bold text-base text-textDark">Filter Produk</h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterOpen(false)}
+                      className="p-1 text-textMuted hover:text-textDark focus:outline-none"
+                    >
+                      <span className="material-symbols-outlined text-xl">close</span>
+                    </button>
+                  </div>
+                  <CatalogSidebarFilter
+                    categories={categories}
+                    seriesList={seriesList}
+                    selectedCategory={selectedCategory}
+                    selectedSeries={selectedSeries}
+                    onlySale={onlySale}
+                    isLoading={isLoadingMeta}
+                    onSelectCategory={handleCategoryChange}
+                    onSelectSeries={handleSeriesChange}
+                    onToggleSale={handleSaleToggle}
+                    onReset={handleReset}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsFilterOpen(false)}
+                  className="mt-6 w-full py-2.5 bg-primary text-white font-bold text-sm rounded shadow hover:bg-opacity-90 transition"
+                >
+                  Tampilkan Hasil
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* MAIN CONTENT AREA */}
           <div className="flex-1">
-            {/* TOP BAR SORT DESKTOP */}
+            {/* MOBILE SEARCH & FILTER BUTTON (STICKY) */}
+            <div 
+              className="flex md:hidden gap-2 mb-4 w-full sticky z-30 bg-bgLight pt-2 pb-1"
+              style={{ top: "var(--navbar-height, 80px)" }}
+            >
+              <form onSubmit={handleMobileSearch} className="flex flex-1">
+                <input
+                  type="text"
+                  value={mobileSearchInput}
+                  onChange={(e) => setMobileSearchInput(e.target.value)}
+                  placeholder="Cari meja, lemari, rak..."
+                  className="w-full px-3 py-2 border border-borderColor rounded-l text-sm focus:border-primary focus:outline-none bg-white"
+                />
+                <button type="submit" className="bg-primary text-white px-4 rounded-r text-sm font-medium hover:bg-opacity-90 transition">
+                  Cari
+                </button>
+              </form>
+              <button
+                type="button"
+                onClick={() => setIsFilterOpen(true)}
+                className="bg-white border border-borderColor rounded px-3 py-2 flex items-center justify-center text-textDark hover:bg-gray-50 focus:outline-none shrink-0"
+                aria-label="Buka Filter"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </button>
+            </div>
+
+            {/* TOP BAR SORT (STICKY DESKTOP & MOBILE) */}
             <div
-              className="hidden md:flex sticky justify-between items-center bg-white p-4 border border-borderColor rounded shadow-sm text-sm mb-4 z-20 transition-all"
-              style={{ top: "calc(var(--navbar-height, 110px) + 20px)" }}
+              className="sticky z-20 flex justify-between items-center bg-white p-3 md:p-4 border border-borderColor rounded shadow-sm text-xs md:text-sm mb-4 transition-all"
+              style={{ top: "var(--navbar-height, 130px)" }}
             >
               <div className="text-textMuted">
                 Menampilkan <span className="font-semibold text-textDark">{sortedProducts.length}</span> Produk
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-textMuted">Urutkan:</span>
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <span className="text-textMuted hidden sm:inline">Urutkan:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white border border-borderColor p-1.5 rounded focus:outline-none text-textDark cursor-pointer font-medium"
+                  className="bg-white border border-borderColor p-1.5 rounded focus:outline-none text-textDark cursor-pointer font-medium text-xs md:text-sm"
                 >
                   <option value="default">Paling Sesuai</option>
                   <option value="low-to-high">Harga Terendah</option>

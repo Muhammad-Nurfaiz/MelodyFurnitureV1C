@@ -139,6 +139,11 @@ export function Footer() {
                   Kebijakan Privasi
                 </Link>
               </li>
+              <li>
+                <Link href="/terms-conditions" className="text-textMuted hover:text-secondary transition">
+                  Syarat & Ketentuan
+                </Link>
+              </li>
             </ul>
           </div>
 

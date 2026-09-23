@@ -19,7 +19,7 @@ export function ProductCard({ product }: { product: Product }) {
         <img
           src={thumbnailUrl}
           alt={product.thumbnail?.alt_text || product.name || "Produk"}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-fit"
         />
 
         {product.is_sale && (
