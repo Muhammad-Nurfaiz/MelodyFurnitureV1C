@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, FormEvent, useEffect } from "react";
 import { DesktopNavLinks, MobileNavToggle } from "./SiteNav";
-import { initGuestSession } from "@/lib/guestSession";
+import { requestWithGuestSession } from "@/lib/guestSession";
 
 interface NavbarProps {
   cartCount?: number;
@@ -20,23 +20,22 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
   // Fetch Total Item dari API Cart
   const fetchCartCount = async () => {
     try {
-      let guestToken = typeof window !== "undefined" ? localStorage.getItem("guest_session_id") : null;
-      if (!guestToken) {
-        guestToken = await initGuestSession();
-      }
-
-      const res = await fetch(`${API_BASE_URL}/api/cart`, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          ...(guestToken && { "X-Guest-Session-Id": guestToken }),
-        },
-      });
+      const res = await requestWithGuestSession(
+        `${API_BASE_URL}/api/cart`,
+        {
+          method: "GET",
+        }
+      );
 
       if (res.ok) {
         const json = await res.json();
+
         // Mengutamakan total_items
-        const count = json.data?.total_items ?? json.data?.items?.length ?? 0;
+        const count =
+          json.data?.total_items ??
+          json.data?.items?.length ??
+          0;
+
         setTotalItems(count);
       }
     } catch (err) {

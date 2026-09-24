@@ -9,7 +9,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { Product } from "@/types";
-import { initGuestSession } from "@/lib/guestSession";
+import { requestWithGuestSession } from "@/lib/guestSession";
 
 // Interface untuk response API Cart
 interface CartItem {
@@ -54,22 +54,6 @@ export default function CartPage() {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
 
-  // Helper untuk header request ke API
-  const getHeaders = async () => {
-    let guestToken = typeof window !== "undefined" ? localStorage.getItem("guest_session_id") : null;
-
-    if (!guestToken) {
-      guestToken = await initGuestSession();
-    }
-
-    return {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      // Gunakan nama header yang sesuai dengan middleware Laravel
-      ...(guestToken && { "X-Guest-Session-Id": guestToken }),
-    };
-  };
-
   // Helper untuk normalisasi URL gambar
   const getImageUrl = (path?: string) => {
     if (!path) return "/placeholder.jpg"; // Gambar fallback jika path kosong
@@ -84,16 +68,21 @@ export default function CartPage() {
   // 1. Fetch Cart Data
   const fetchCart = async () => {
     setLoadingCart(true);
-    try {
-      const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/cart`, {
-        method: "GET",
-        headers,
-      });
 
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    try {
+      const res = await requestWithGuestSession(
+        `${API_BASE_URL}/api/cart`,
+        {
+          method: "GET",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
 
       const json = await res.json();
+
       if (json.data) {
         setCart(json.data);
 
@@ -126,14 +115,19 @@ export default function CartPage() {
   // 2. Update Quantity Item
   const handleUpdateQuantity = async (itemId: string, newQty: number) => {
     if (newQty < 1) return;
+
     try {
-      const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/cart/items/${itemId}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ quantity: newQty }),
-      });
-      if (res.ok) fetchCart();
+      const res = await requestWithGuestSession(
+        `${API_BASE_URL}/api/cart/items/${itemId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ quantity: newQty }),
+        }
+      );
+
+      if (res.ok) {
+        await fetchCart();
+      }
     } catch (err) {
       console.error("Gagal mengubah kuantitas:", err);
     }
@@ -142,13 +136,16 @@ export default function CartPage() {
   // 3. Delete Item
   const handleDeleteItem = async (itemId: string) => {
     try {
-      const headers = await getHeaders();
-      const res = await fetch(`${API_BASE_URL}/api/cart/items/${itemId}`, {
-        method: "DELETE",
-        headers,
-      });
+      const res = await requestWithGuestSession(
+        `${API_BASE_URL}/api/cart/items/${itemId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
       if (res.ok) {
         await fetchCart();
+
         // Dispatch event agar Navbar memperbarui badge count
         window.dispatchEvent(new Event("cart-updated"));
       }

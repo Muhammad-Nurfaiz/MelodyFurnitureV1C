@@ -18,7 +18,7 @@ import {
   SkeletonOverlay,
   useContentReady,
 } from "@/components/ContentSkeleton";
-import { initGuestSession } from "@/lib/guestSession";
+import { requestWithGuestSession } from "@/lib/guestSession";
 import { getImageUrl, formatRupiah } from "@/lib/utils";
 import { Product, CategoryOrSeries } from "@/types";
 import { getProductDetail, getProductRecommendations } from "@/services/api";
@@ -129,33 +129,23 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
     setToastMessage(null);
 
     try {
-      let guestToken = localStorage.getItem("guest_session_id");
-      if (!guestToken) {
-        guestToken = await initGuestSession();
-      }
-
-      if (!guestToken) {
-        throw new Error("Gagal menginisialisasi sesi. Silakan muat ulang halaman.");
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/cart/items`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-Guest-Session-Id": guestToken,
-        },
-        body: JSON.stringify({
-          product_id: product.id,
-          quantity: 1,
-          guest_token: guestToken,
-        }),
-      });
+      const response = await requestWithGuestSession(
+        `${API_BASE_URL}/api/cart/items`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            product_id: product.id,
+            quantity: 1,
+          }),
+        }
+      );
 
       const resData = await response.json();
 
       if (!response.ok) {
-        throw new Error(resData.message || "Gagal menambahkan produk ke keranjang");
+        throw new Error(
+          resData.message || "Gagal menambahkan produk ke keranjang"
+        );
       }
 
       window.dispatchEvent(new Event("cart-updated"));

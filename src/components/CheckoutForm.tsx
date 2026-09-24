@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { initGuestSession } from "@/lib/guestSession";
+import { requestWithGuestSession } from "@/lib/guestSession";
 import { getProductDetail } from "@/services/api";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
@@ -213,25 +213,10 @@ function useCheckoutStore(): Ctx {
         setCartLoading(true);
         setCartError("");
 
-        let guestToken =
-          typeof window !== "undefined"
-            ? localStorage.getItem("guest_session_id")
-            : null;
-
-        if (!guestToken) {
-          guestToken = await initGuestSession();
-        }
-
-        const response = await fetch(
+        const response = await requestWithGuestSession(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/cart`,
           {
             method: "GET",
-            headers: {
-              "Accept": "application/json",
-              ...(guestToken && {
-                "X-Guest-Session-Id": guestToken,
-              }),
-            },
           }
         );
 
@@ -544,25 +529,10 @@ function useCheckoutStore(): Ctx {
         setShippingError("");
         setShippingState("");
 
-        const guestToken =
-          typeof window !== "undefined"
-            ? localStorage.getItem("guest_session_id")
-            : null;
-
-        const resolvedGuestToken =
-          guestToken || (await initGuestSession());
-
-        const response = await fetch(
+        const response = await requestWithGuestSession(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/shipping/estimate-all`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              ...(resolvedGuestToken && {
-                "X-Guest-Session-Id": resolvedGuestToken,
-              }),
-            },
             body: JSON.stringify({
               regency_id: fields.regency_id,
               ...(checkoutMode === "direct" &&
@@ -1059,15 +1029,6 @@ export function PlaceOrderButton() {
     setLoading(true);
 
     try {
-      let guestToken =
-        typeof window !== "undefined"
-          ? localStorage.getItem("guest_session_id")
-          : null;
-
-      if (!guestToken) {
-        guestToken = await initGuestSession();
-      }
-
       const basePayload = {
         name: fields.nama,
         email: fields.email || null,
@@ -1105,17 +1066,10 @@ export function PlaceOrderButton() {
           ? "/checkout/direct"
           : "/checkout";
 
-      const response = await fetch(
+      const response = await requestWithGuestSession(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}${endpoint}`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            ...(guestToken && {
-              "X-Guest-Session-Id": guestToken,
-            }),
-          },
           body: JSON.stringify(payload),
         }
       );

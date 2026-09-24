@@ -1,5 +1,8 @@
 // src/lib/guestSession.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "http://127.0.0.1:8000/api";
 
 export const initGuestSession = async (): Promise<string | null> => {
   let sessionId = localStorage.getItem("guest_session_id");
@@ -9,7 +12,7 @@ export const initGuestSession = async (): Promise<string | null> => {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/customer/session`, {
+    const response = await fetch(`${API_BASE_URL}/customer/session`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -33,4 +36,55 @@ export const initGuestSession = async (): Promise<string | null> => {
   }
 
   return null;
+};
+
+export const refreshGuestSession = async (): Promise<string | null> => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  localStorage.removeItem("guest_session_id");
+
+  return initGuestSession();
+};
+
+export const requestWithGuestSession = async (
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<Response> => {
+  const makeRequest = async (token: string | null) => {
+    const headers = new Headers(init.headers);
+
+    headers.set("Content-Type", "application/json");
+    headers.set("Accept", "application/json");
+
+    if (token) {
+      headers.set("X-Guest-Session-Id", token);
+    }
+
+    return fetch(input, {
+      ...init,
+      headers,
+    });
+  };
+
+  let token = await initGuestSession();
+
+  let response = await makeRequest(token);
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  // Session kemungkinan sudah tidak valid.
+  // Buat session baru lalu coba request sekali lagi.
+  token = await refreshGuestSession();
+
+  if (!token) {
+    return response;
+  }
+
+  response = await makeRequest(token);
+
+  return response;
 };
