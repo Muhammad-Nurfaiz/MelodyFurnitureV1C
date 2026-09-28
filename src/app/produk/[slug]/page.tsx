@@ -20,7 +20,7 @@ import {
 } from "@/components/ContentSkeleton";
 import { requestWithGuestSession } from "@/lib/guestSession";
 import { getImageUrl, formatRupiah } from "@/lib/utils";
-import { Product, CategoryOrSeries } from "@/types";
+import { Product, ProductVariant, CategoryOrSeries } from "@/types";
 import { getProductDetail, getProductRecommendations } from "@/services/api";
 import type { ReactNode } from "react";
 
@@ -79,6 +79,7 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
   const { slug } = use(params);
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,6 +104,32 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
       try {
         const productData = await getProductDetail(slug);
         setProduct(productData);
+
+        const activeVariants =
+          productData.variants?.filter(
+            (variant: ProductVariant) => variant.is_active
+          ) ?? [];
+
+        if (activeVariants.length > 0) {
+          const availableVariants = activeVariants.filter(
+            (variant) => variant.ready_stock > 0
+          );
+
+          if (availableVariants.length > 0) {
+            const variantWithMostStock = availableVariants.reduce(
+              (highest, current) =>
+                current.ready_stock > highest.ready_stock
+                  ? current
+                  : highest
+            );
+
+            setSelectedVariantId(variantWithMostStock.id);
+          } else {
+            setSelectedVariantId(null);
+          }
+        } else {
+          setSelectedVariantId(null);
+        }
       } catch (err: any) {
         setError(err.message || "Terjadi kesalahan saat memuat data produk.");
       } finally {
@@ -122,20 +149,51 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
     if (slug) fetchData();
   }, [slug]);
 
+  const activeVariants =
+    product?.variants?.filter((variant) => variant.is_active) ?? [];
+
+  const selectedVariant =
+    activeVariants.find((variant) => variant.id === selectedVariantId) ?? null;
+
+  const hasVariants = activeVariants.length > 0;
+
+  const availableStock = hasVariants
+    ? selectedVariant?.ready_stock ?? 0
+    : product?.total_stock ?? 0;
+
   const handleAddToCart = async () => {
     if (!product?.id) return;
+
+    if (hasVariants && !selectedVariant) {
+      setToastMessage({
+        type: "error",
+        text: "Silakan pilih varian terlebih dahulu.",
+      });
+      return;
+    }
+
+    if (availableStock <= 0) {
+      setToastMessage({
+        type: "error",
+        text: "Stok produk tidak mencukupi.",
+      });
+      return;
+    }
 
     setAddingToCart(true);
     setToastMessage(null);
 
     try {
       const response = await requestWithGuestSession(
-        `${API_BASE_URL}/api/cart/items`,
+        `${API_BASE_URL}/cart/items`,
         {
           method: "POST",
           body: JSON.stringify({
             product_id: product.id,
             quantity: 1,
+            ...(selectedVariant
+              ? { product_variant_id: selectedVariant.id }
+              : {}),
           }),
         }
       );
@@ -149,14 +207,19 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
       }
 
       window.dispatchEvent(new Event("cart-updated"));
+
       setToastMessage({
         type: "success",
-        text: resData.message || "Produk berhasil ditambahkan ke keranjang!",
+        text:
+          resData.message ||
+          "Produk berhasil ditambahkan ke keranjang!",
       });
     } catch (err: any) {
       setToastMessage({
         type: "error",
-        text: err.message || "Terjadi kesalahan, silakan coba lagi.",
+        text:
+          err.message ||
+          "Terjadi kesalahan, silakan coba lagi.",
       });
     } finally {
       setAddingToCart(false);
@@ -232,17 +295,75 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
                         </>
                       )}
                     </div>
+                    {hasVariants && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm md:text-base font-bold text-textDark">
+                            Pilih Warna
+                          </p>
+                        </div>
 
+                        <div className="flex flex-wrap gap-2">
+                          {activeVariants.map((variant) => {
+                            const isSelected = selectedVariantId === variant.id;
+                            const isOutOfStock = variant.ready_stock <= 0;
+
+                            return (
+                              <button
+                                key={variant.id}
+                                type="button"
+                                onClick={() => {
+                                  if (!isOutOfStock) {
+                                    setSelectedVariantId(variant.id);
+                                  }
+                                }}
+                                disabled={isOutOfStock}
+                                className={`
+                                  relative min-w-[90px] px-4 py-2.5 rounded-lg
+                                  border text-sm font-semibold transition-all
+                                  ${
+                                    isSelected
+                                      ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                                      : "border-borderColor bg-white text-textDark hover:border-primary"
+                                  }
+                                  ${
+                                    isOutOfStock
+                                      ? "opacity-50 cursor-not-allowed line-through"
+                                      : ""
+                                  }
+                                `}
+                              >
+                                {variant.name}
+
+                                {isOutOfStock && (
+                                  <span className="block text-[10px] font-normal mt-0.5 no-underline">
+                                    Stok habis
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       <div className="inline-flex items-center gap-2 bg-[#E8F7EE] text-[#1B7F4C] px-3 py-1.5 rounded-full">
                         <span className="material-symbols-outlined text-base md:text-lg">inventory_2</span>
                         <span className="text-xs md:text-sm font-bold">Rating {product?.average_rating || 0} ⭐ | Terjual {product?.total_sold || 0}+</span>
                       </div>
                       {product && (
-                        <span className={`text-xs md:text-sm font-medium px-2.5 py-1 rounded-full ${
-                          (product.total_stock ?? 0) > 0 ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-red-50 text-red-600 border border-red-100"
-                        }`}>
-                          {(product.total_stock ?? 0) > 0 ? `Stok Tersedia: ${product.total_stock}` : "Stok Habis"}
+                        <span
+                          className={`text-xs md:text-sm font-medium px-2.5 py-1 rounded-full ${
+                            availableStock > 0
+                              ? "bg-blue-50 text-blue-700 border border-blue-100"
+                              : "bg-red-50 text-red-600 border border-red-100"
+                          }`}
+                        >
+                          {availableStock > 0
+                            ? `Stok Tersedia: ${availableStock}`
+                            : hasVariants && !selectedVariant
+                              ? "Pilih Varian"
+                              : "Stok Habis"}
                         </span>
                       )}
                     </div>
@@ -254,7 +375,11 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
                   <div className="flex flex-col space-y-3">
                     <button
                       onClick={handleAddToCart}
-                      disabled={product?.total_stock === 0 || addingToCart}
+                      disabled={
+                        addingToCart ||
+                        availableStock <= 0 ||
+                        (hasVariants && !selectedVariant)
+                      }
                       className="w-full bg-secondary text-white text-sm md:text-base font-bold py-3.5 md:py-4 rounded hover:bg-opacity-90 transition-all flex items-center justify-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
                       {addingToCart ? (
@@ -274,11 +399,18 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
                         product?.id
                           ? `/checkout?mode=direct&product_id=${encodeURIComponent(
                               product.id
-                            )}&slug=${encodeURIComponent(slug)}&quantity=1`
+                            )}&slug=${encodeURIComponent(slug)}&quantity=1${
+                              selectedVariant
+                                ? `&product_variant_id=${encodeURIComponent(
+                                    selectedVariant.id
+                                  )}`
+                                : ""
+                            }`
                           : "/checkout"
                       }
                       className={`w-full border-2 border-primary text-primary text-sm md:text-base font-bold py-3.5 md:py-4 rounded hover:bg-primary hover:text-white transition-all text-center ${
-                        product?.total_stock === 0
+                        availableStock <= 0 ||
+                        (hasVariants && !selectedVariant)
                           ? "pointer-events-none opacity-50"
                           : ""
                       }`}

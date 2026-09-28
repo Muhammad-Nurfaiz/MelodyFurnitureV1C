@@ -28,6 +28,15 @@ export interface ProductMedia {
   sort_order: number;
 }
 
+export interface ProductVariant {
+  id: string;
+  name: string;
+  ready_stock: number;
+  locked_stock?: number;
+  is_active: boolean;
+  sort_order: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -50,6 +59,7 @@ export interface Product {
   series: CategoryOrSeries | string | null;
   specification?: ProductSpecification;
   media?: ProductMedia[];
+  variants?: ProductVariant[];
 }
 
 export interface HeroSlide {

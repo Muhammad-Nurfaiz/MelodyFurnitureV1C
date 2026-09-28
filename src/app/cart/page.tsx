@@ -17,6 +17,10 @@ interface CartItem {
   quantity: number;
   unit_price: string;
   subtotal: number;
+  product_variant: {
+    id: string;
+    name: string;
+  } | null;
   product: {
     id: string;
     name: string;
@@ -71,7 +75,7 @@ export default function CartPage() {
 
     try {
       const res = await requestWithGuestSession(
-        `${API_BASE_URL}/api/cart`,
+        `${API_BASE_URL}/cart`,
         {
           method: "GET",
         }
@@ -118,7 +122,7 @@ export default function CartPage() {
 
     try {
       const res = await requestWithGuestSession(
-        `${API_BASE_URL}/api/cart/items/${itemId}`,
+        `${API_BASE_URL}/cart/items/${itemId}`,
         {
           method: "PATCH",
           body: JSON.stringify({ quantity: newQty }),
@@ -137,7 +141,7 @@ export default function CartPage() {
   const handleDeleteItem = async (itemId: string) => {
     try {
       const res = await requestWithGuestSession(
-        `${API_BASE_URL}/api/cart/items/${itemId}`,
+        `${API_BASE_URL}/cart/items/${itemId}`,
         {
           method: "DELETE",
         }
@@ -159,7 +163,7 @@ export default function CartPage() {
     setLoadingRecs(true);
     try {
       // 1. Hapus parameter limit=4 dari URL
-      const res = await fetch(`${API_BASE_URL}/api/products`, {
+      const res = await fetch(`${API_BASE_URL}/products`, {
         headers: {
           "Accept": "application/json",
         },
@@ -264,6 +268,14 @@ export default function CartPage() {
                           <h3 className="text-sm sm:text-base md:text-lg font-bold text-textDark leading-snug line-clamp-2">
                             {item.product.name}
                           </h3>
+                          {item.product_variant && (
+                            <p className="mt-1 text-xs sm:text-sm text-textMuted">
+                              Varian:{" "}
+                              <span className="font-semibold text-textDark">
+                                {item.product_variant.name}
+                              </span>
+                            </p>
+                          )}
                           <p className="text-sm sm:text-base md:text-lg font-bold text-secondary whitespace-nowrap">
                             {formatRupiah(item.subtotal)}
                           </p>
@@ -292,8 +304,12 @@ export default function CartPage() {
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              className="px-2.5 sm:px-3 py-1 hover:bg-neutral-200 transition-colors text-textDark font-semibold text-sm"
+                              onClick={() =>
+                                handleUpdateQuantity(item.id, item.quantity + 1)
+                              }
+                              disabled={item.quantity >= item.product.stock}
+                              className="px-2.5 sm:px-3 py-1 hover:bg-neutral-200 transition-colors text-textDark font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                              aria-label="Tambah jumlah"
                             >
                               +
                             </button>

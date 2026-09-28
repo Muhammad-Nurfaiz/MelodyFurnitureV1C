@@ -33,6 +33,7 @@ type ShippingOption = {
   courier_name: string;
   service: string;
   weight: number | null;
+  original_fee: number | null;
   fee: number | null;
   available: boolean;
 };
@@ -51,12 +52,19 @@ type CartItem = {
   quantity: number;
   unit_price: string;
   subtotal: number;
+  product_variant: {
+    id: string;
+    name: string;
+  } | null;
   product: CartProduct;
 };
 
 type DirectCheckoutItem = {
   product_id: string;
   quantity: number;
+  stock: number;
+  product_variant_id: string | null;
+  product_variant_name: string | null;
   product: {
     id: string;
     name: string;
@@ -87,7 +95,8 @@ type Ctx = {
   shippingLoading: boolean;
   shippingError: string;
   selectedShippingFee: number;
-
+  selectedShippingOriginalFee: number;
+  selectedShippingSubsidy: number;
   voucherCode: string;
   voucherDiscount: number;
   voucherValid: boolean;
@@ -117,6 +126,8 @@ export function useCheckout() {
   return ctx ?? fallback;
 }
 
+
+
 const REQUIRED_LABELS: Record<string, string> = {
   nama: "Nama lengkap wajib diisi.",
   phone: "Nomor telepon wajib diisi.",
@@ -137,6 +148,9 @@ function useCheckoutStore(): Ctx {
 
     const directProductId =
       searchParams.get("product_id");
+
+    const directProductVariantId =
+      searchParams.get("product_variant_id");
 
     const directSlug =
       searchParams.get("slug");
@@ -172,7 +186,7 @@ function useCheckoutStore(): Ctx {
   const [shippingError, setShippingError] =
     useState("");
 
-  const selectedShippingFee = useMemo(() => {
+  const selectedShippingData = useMemo(() => {
     const selectedOption = shippingOptions.find(
       (option) =>
         option.courier_code === shipping &&
@@ -180,8 +194,27 @@ function useCheckoutStore(): Ctx {
         option.fee !== null
     );
 
-    return selectedOption?.fee ?? 0;
+    const originalFee =
+      selectedOption?.original_fee ?? 0;
+
+    const fee =
+      selectedOption?.fee ?? 0;
+
+    return {
+      fee,
+      originalFee,
+      subsidy: Math.max(0, originalFee - fee),
+    };
   }, [shippingOptions, shipping]);
+
+  const selectedShippingFee =
+    selectedShippingData.fee;
+
+  const selectedShippingOriginalFee =
+    selectedShippingData.originalFee;
+
+  const selectedShippingSubsidy =
+    selectedShippingData.subsidy;
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartSubtotal, setCartSubtotal] = useState(0);
@@ -329,6 +362,43 @@ function useCheckoutStore(): Ctx {
           );
         }
 
+        const activeVariants =
+          product.variants?.filter(
+            (variant) => variant.is_active
+          ) ?? [];
+
+        const selectedVariant =
+          directProductVariantId
+            ? activeVariants.find(
+                (variant) =>
+                  variant.id === directProductVariantId
+              ) ?? null
+            : null;
+
+        if (activeVariants.length > 0) {
+          if (!directProductVariantId) {
+            throw new Error(
+              "Varian produk belum dipilih."
+            );
+          }
+
+          if (!selectedVariant) {
+            throw new Error(
+              "Varian produk tidak valid."
+            );
+          }
+
+          if (selectedVariant.ready_stock < directQuantity) {
+            throw new Error(
+              `Stok varian ${selectedVariant.name} tidak mencukupi.`
+            );
+          }
+        }
+
+        const availableStock =
+          selectedVariant?.ready_stock ??
+          Number(product.total_stock);
+
         const unitPrice =
           Number(product.discount_price) > 0
             ? Number(product.discount_price)
@@ -337,6 +407,9 @@ function useCheckoutStore(): Ctx {
         setDirectItem({
           product_id: product.id,
           quantity: directQuantity,
+          stock: availableStock,
+          product_variant_id: selectedVariant?.id ?? null,
+          product_variant_name: selectedVariant?.name ?? null,
           product: {
             id: product.id,
             name: product.name,
@@ -375,6 +448,7 @@ function useCheckoutStore(): Ctx {
   }, [
     checkoutMode,
     directProductId,
+    directProductVariantId,
     directSlug,
     directQuantity,
   ]);
@@ -406,26 +480,34 @@ function useCheckoutStore(): Ctx {
     }
 
     setCartItems([
-      {
-        id: `direct-${directItem.product_id}`,
-        quantity: directItem.quantity,
-        unit_price: String(
-          directItem.subtotal / directItem.quantity
-        ),
-        subtotal: directItem.subtotal,
-        product: {
-          id: directItem.product.id,
-          name: directItem.product.name,
-          slug: directItem.product.slug,
-          thumbnail: directItem.product.thumbnail,
-          stock: 0,
-          is_sale:
-            Number(
-              directItem.product.discount_price
-            ) > 0,
-        },
+    {
+      id: `direct-${directItem.product_id}-${directItem.product_variant_id ?? "none"}`,
+      quantity: directItem.quantity,
+      unit_price: String(
+        directItem.subtotal / directItem.quantity
+      ),
+      subtotal: directItem.subtotal,
+      product: {
+        id: directItem.product.id,
+        name: directItem.product.name,
+        slug: directItem.product.slug,
+        thumbnail: directItem.product.thumbnail,
+        stock: directItem.stock,
+        is_sale:
+          Number(
+            directItem.product.discount_price
+          ) > 0,
       },
-    ]);
+      product_variant:
+        directItem.product_variant_id
+          ? {
+              id: directItem.product_variant_id,
+              name:
+                directItem.product_variant_name ?? "",
+            }
+          : null,
+    },
+  ]);
 
     setCartSubtotal(directItem.subtotal);
   }, [checkoutMode, directItem]);
@@ -539,8 +621,10 @@ function useCheckoutStore(): Ctx {
                 directItem && {
                   items: [
                     {
-                      product_id: directItem.product_id,
-                      quantity: directItem.quantity,
+                      product_id: directItem!.product_id,
+                      product_variant_id:
+                        directItem!.product_variant_id,
+                      quantity: directItem!.quantity,
                     },
                   ],
                 }),
@@ -651,6 +735,8 @@ function useCheckoutStore(): Ctx {
       shippingLoading,
       shippingError,
       selectedShippingFee,
+      selectedShippingOriginalFee,
+      selectedShippingSubsidy,
       voucherCode,
       voucherDiscount,
       voucherValid,
@@ -717,6 +803,8 @@ function useCheckoutStore(): Ctx {
       shippingLoading,
       shippingError,
       selectedShippingFee,
+      selectedShippingOriginalFee,
+      selectedShippingSubsidy,
       voucherCode,
       voucherDiscount,
       voucherValid,
@@ -871,9 +959,28 @@ export function ShippingMethodOptions() {
 
                 <div className="shrink-0 text-right">
                   {isAvailable ? (
-                    <p className="font-semibold text-textDark">
-                      Rp {option.fee!.toLocaleString("id-ID")}
-                    </p>
+                    <div>
+                      <p className="font-semibold text-textDark">
+                        Rp {option.fee!.toLocaleString("id-ID")}
+                      </p>
+
+                      {option.original_fee !== null &&
+                        option.original_fee > option.fee! && (
+                          <p className="mt-0.5 text-xs text-gray-400 line-through">
+                            Rp {option.original_fee.toLocaleString("id-ID")}
+                          </p>
+                        )}
+
+                      {option.original_fee !== null &&
+                        option.original_fee > option.fee! && (
+                          <p className="mt-0.5 text-xs font-medium text-green-600">
+                            Hemat Rp{" "}
+                            {(
+                              option.original_fee - option.fee!
+                            ).toLocaleString("id-ID")}
+                          </p>
+                        )}
+                    </div>
                   ) : (
                     <p className="text-sm font-medium text-red-500">
                       Tidak tersedia
@@ -1052,6 +1159,7 @@ export function PlaceOrderButton() {
               items: [
                 {
                   product_id: directItem!.product_id,
+                  product_variant_id: directItem!.product_variant_id,
                   quantity: directItem!.quantity,
                 },
               ],

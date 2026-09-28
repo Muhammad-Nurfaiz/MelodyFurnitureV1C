@@ -21,7 +21,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
   const fetchCartCount = async () => {
     try {
       const res = await requestWithGuestSession(
-        `${API_BASE_URL}/api/cart`,
+        `${API_BASE_URL}/cart`,
         {
           method: "GET",
         }

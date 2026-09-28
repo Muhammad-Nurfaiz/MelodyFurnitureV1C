@@ -33,6 +33,8 @@ type TimelineItem = {
 
 type OrderItem = {
   product_id: string;
+  product_variant_id: string | null;
+  product_variant_name: string | null;
   name: string;
   slug: string;
   image: string | null;
@@ -769,6 +771,12 @@ function TrackPageContent() {
                               <h4 className="text-xs sm:text-sm md:text-base font-bold text-primary mb-0.5">
                                 {item.name}
                               </h4>
+
+                              {item.product_variant_name && (
+                                <p className="text-[11px] sm:text-xs font-medium text-on-surface-variant mt-0.5">
+                                  Varian: {item.product_variant_name}
+                                </p>
+                              )}
 
                               <p className="text-[11px] sm:text-xs font-medium text-on-surface-variant">
                                 {formatRupiah(item.unit_price)}

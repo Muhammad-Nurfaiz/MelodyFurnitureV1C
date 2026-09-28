@@ -22,6 +22,8 @@ const BACKEND_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
 function CheckoutSummary() {
     const {
         selectedShippingFee,
+        selectedShippingOriginalFee,
+        selectedShippingSubsidy,
         voucherDiscount,
         cartItems,
         cartSubtotal,
@@ -83,6 +85,15 @@ function CheckoutSummary() {
                         {item.product.name}
                     </h4>
 
+                    {item.product_variant && (
+                      <p className="text-xs md:text-sm text-textMuted font-medium mt-1">
+                        Varian:{" "}
+                        <span className="text-textDark font-semibold">
+                          {item.product_variant.name}
+                        </span>
+                      </p>
+                    )}
+
                     <p className="text-xs md:text-sm text-[#737785] font-medium mt-1">
                         Qty: {item.quantity}
                     </p>
@@ -107,14 +118,40 @@ function CheckoutSummary() {
                 </span>
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-start">
                 <span>Ongkos Kirim (Kargo)</span>
 
-                <span className="text-textDark font-semibold">
-                {selectedShippingFee > 0
-                    ? `Rp ${selectedShippingFee.toLocaleString("id-ID")}`
-                    : "-"}
-                </span>
+                <div className="text-right">
+                    {selectedShippingFee > 0 ? (
+                        <>
+                            <p className="text-textDark font-semibold">
+                                Rp{" "}
+                                {selectedShippingFee.toLocaleString(
+                                    "id-ID"
+                                )}
+                            </p>
+                            {selectedShippingOriginalFee >
+                                selectedShippingFee && (
+                                <p className="text-xs text-gray-400 line-through">
+                                    Rp{" "}
+                                    {selectedShippingOriginalFee.toLocaleString(
+                                        "id-ID"
+                                    )}
+                                </p>
+                            )}
+                            {selectedShippingSubsidy > 0 && (
+                                <p className="text-xs font-medium text-green-600">
+                                    Subsidi Rp{" "}
+                                    {selectedShippingSubsidy.toLocaleString(
+                                        "id-ID"
+                                    )}
+                                </p>
+                            )}
+                        </>
+                    ) : (
+                        "-"
+                    )}
+                </div>
             </div>
 
             {voucherDiscount > 0 && (
