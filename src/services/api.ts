@@ -1,6 +1,6 @@
 import { HeroSlide, CategoryOrSeriesItem, Product, CatalogData } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
 export async function fetchWithAuth<T>(endpoint: string, token: string): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
