@@ -31,6 +31,10 @@ export interface ProductMedia {
 export interface ProductVariant {
   id: string;
   name: string;
+  original_price: number;
+  discount_price: number | null;
+  discount_percentage: number | null;
+  media_id: string | null;
   ready_stock: number;
   locked_stock?: number;
   is_active: boolean;

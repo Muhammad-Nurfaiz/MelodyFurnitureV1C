@@ -67,13 +67,19 @@ function CheckoutSummary() {
                     className="flex gap-4 items-start"
                 >
                     <div className="w-20 h-20 bg-bg-alt rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle">
-                    {item.product.thumbnail ? (
-                        <img
-                        alt={item.product.name}
+                    {item.product_variant?.media?.url || item.product.thumbnail ? (
+                      <img
+                        alt={
+                          item.product_variant?.media?.alt_text ||
+                          item.product.name
+                        }
                         className="w-full h-full object-cover"
-                        src={`${BACKEND_BASE_URL}${item.product.thumbnail}`}
-                        />
-                    ) : (
+                        src={`${BACKEND_BASE_URL}${
+                          item.product_variant?.media?.url ||
+                          item.product.thumbnail
+                        }`}
+                      />
+                  ) : (
                         <div className="w-full h-full flex items-center justify-center text-xs text-textMuted">
                         No Image
                         </div>

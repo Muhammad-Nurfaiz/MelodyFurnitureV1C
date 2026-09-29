@@ -13,6 +13,7 @@ import { requestWithGuestSession } from "@/lib/guestSession";
 import { getProductDetail } from "@/services/api";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import type { ProductMedia } from "@/types";
 
 export type CheckoutFields = {
   nama: string;
@@ -50,12 +51,15 @@ type CartProduct = {
 type CartItem = {
   id: string;
   quantity: number;
-  unit_price: string;
+  unit_price: number;
   subtotal: number;
+
   product_variant: {
     id: string;
     name: string;
+    media: ProductMedia | null;
   } | null;
+
   product: CartProduct;
 };
 
@@ -65,6 +69,8 @@ type DirectCheckoutItem = {
   stock: number;
   product_variant_id: string | null;
   product_variant_name: string | null;
+  product_variant_media: ProductMedia | null;
+
   product: {
     id: string;
     name: string;
@@ -74,6 +80,7 @@ type DirectCheckoutItem = {
     discount_price?: number;
     original_price?: number;
   };
+
   subtotal: number;
 };
 
@@ -399,10 +406,17 @@ function useCheckoutStore(): Ctx {
           selectedVariant?.ready_stock ??
           Number(product.total_stock);
 
-        const unitPrice =
-          Number(product.discount_price) > 0
-            ? Number(product.discount_price)
-            : Number(product.price);
+        const unitPrice = selectedVariant
+          ? (
+              Number(selectedVariant.discount_price) > 0
+                ? Number(selectedVariant.discount_price)
+                : Number(selectedVariant.original_price)
+            )
+          : (
+              Number(product.discount_price) > 0
+                ? Number(product.discount_price)
+                : Number(product.price)
+            );
 
         setDirectItem({
           product_id: product.id,
@@ -410,16 +424,30 @@ function useCheckoutStore(): Ctx {
           stock: availableStock,
           product_variant_id: selectedVariant?.id ?? null,
           product_variant_name: selectedVariant?.name ?? null,
+          product_variant_media: selectedVariant
+            ? product.media?.find(
+                (media) => media.id === selectedVariant.media_id
+              ) ?? null
+            : null,
           product: {
             id: product.id,
             name: product.name,
             slug: product.slug,
             thumbnail:
-              product.media?.find(
-                (media) =>
-                  media.media_type === "image" &&
-                  media.is_main
-              )?.url ?? null,
+              selectedVariant
+                ? (
+                    product.media?.find(
+                      (media) =>
+                        media.id === selectedVariant.media_id
+                    )?.url ?? null
+                  )
+                : (
+                    product.media?.find(
+                      (media) =>
+                        media.media_type === "image" &&
+                        media.is_main
+                    )?.url ?? null
+                  ),
             price: Number(product.price),
             discount_price:
               Number(product.discount_price) || 0,
@@ -480,34 +508,34 @@ function useCheckoutStore(): Ctx {
     }
 
     setCartItems([
-    {
-      id: `direct-${directItem.product_id}-${directItem.product_variant_id ?? "none"}`,
-      quantity: directItem.quantity,
-      unit_price: String(
-        directItem.subtotal / directItem.quantity
-      ),
-      subtotal: directItem.subtotal,
-      product: {
-        id: directItem.product.id,
-        name: directItem.product.name,
-        slug: directItem.product.slug,
-        thumbnail: directItem.product.thumbnail,
-        stock: directItem.stock,
-        is_sale:
-          Number(
-            directItem.product.discount_price
-          ) > 0,
+      {
+        id: `direct-${directItem.product_id}-${directItem.product_variant_id ?? "none"}`,
+        quantity: directItem.quantity,
+        unit_price:
+          directItem.subtotal / directItem.quantity,
+        subtotal: directItem.subtotal,
+
+        product: {
+          id: directItem.product.id,
+          name: directItem.product.name,
+          slug: directItem.product.slug,
+          thumbnail: directItem.product.thumbnail,
+          stock: directItem.stock,
+          is_sale:
+            Number(directItem.product.discount_price) > 0,
+        },
+
+        product_variant:
+          directItem.product_variant_id
+            ? {
+                id: directItem.product_variant_id,
+                name:
+                  directItem.product_variant_name ?? "",
+                media: directItem.product_variant_media,
+              }
+            : null,
       },
-      product_variant:
-        directItem.product_variant_id
-          ? {
-              id: directItem.product_variant_id,
-              name:
-                directItem.product_variant_name ?? "",
-            }
-          : null,
-    },
-  ]);
+    ]);
 
     setCartSubtotal(directItem.subtotal);
   }, [checkoutMode, directItem]);
