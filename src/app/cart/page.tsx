@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LegacyPage } from "@/components/LegacyPage";
 import { css, js } from "@/legacy/cart.legacy";
@@ -15,12 +15,23 @@ import { requestWithGuestSession } from "@/lib/guestSession";
 interface CartItem {
   id: string;
   quantity: number;
-  unit_price: string;
+  unit_price: number;
   subtotal: number;
+
   product_variant: {
     id: string;
     name: string;
+    media: {
+      id: string;
+      media_type: string;
+      url: string;
+      thumbnail_url: string | null;
+      alt_text: string | null;
+      is_main: boolean;
+      sort_order: number;
+    } | null;
   } | null;
+
   product: {
     id: string;
     name: string;
@@ -45,6 +56,7 @@ export default function CartPage() {
   const [loadingCart, setLoadingCart] = useState<boolean>(true);
   const [loadingRecs, setLoadingRecs] = useState<boolean>(true);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const hasInitializedSelection = useRef(false);
 
   // Helper Format Rupiah
   const formatRupiah = (val: number | string) => {
@@ -56,7 +68,8 @@ export default function CartPage() {
     }).format(num || 0);
   };
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://187.53.138.70:8081";
+  const API_BASE_URL_MEDIA = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
 
   // Helper untuk normalisasi URL gambar
   const getImageUrl = (path?: string) => {
@@ -66,7 +79,7 @@ export default function CartPage() {
     }
     // Menghilangkan slash ganda jika path diawali dengan '/'
     const cleanPath = path.startsWith("/") ? path.substring(1) : path;
-    return `${API_BASE_URL}/${cleanPath}`;
+    return `${API_BASE_URL_MEDIA}/${cleanPath}`;
   };
 
   // 1. Fetch Cart Data
@@ -90,9 +103,25 @@ export default function CartPage() {
       if (json.data) {
         setCart(json.data);
 
-        setSelectedItemIds(
-          json.data.items.map((item: CartItem) => item.id)
-        );
+        setSelectedItemIds((current) => {
+          const itemIds = json.data.items.map(
+            (item: CartItem) => item.id
+          );
+
+          // Load cart pertama kali:
+          // semua item dipilih.
+          if (!hasInitializedSelection.current) {
+            hasInitializedSelection.current = true;
+            return itemIds;
+          }
+
+          // Setelah itu, pertahankan pilihan user.
+          // Jika item sudah tidak ada karena dihapus,
+          // otomatis keluarkan dari selection.
+          const validIds = new Set(itemIds);
+
+          return current.filter((id) => validIds.has(id));
+        });
       }
     } catch (err) {
       console.error("Gagal mengambil data keranjang:", err);
@@ -257,9 +286,15 @@ export default function CartPage() {
 
                       <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 bg-surface-container-low rounded-lg overflow-hidden border border-border-subtle">
                         <img
-                          alt={item.product.name}
+                          alt={
+                            item.product_variant?.media?.alt_text ||
+                            item.product.name
+                          }
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          src={getImageUrl(item.product.thumbnail)}
+                          src={getImageUrl(
+                            item.product_variant?.media?.url ||
+                            item.product.thumbnail
+                          )}
                         />
                       </div>
 

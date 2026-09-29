@@ -24,27 +24,55 @@ import { Product, ProductVariant, CategoryOrSeries } from "@/types";
 import { getProductDetail, getProductRecommendations } from "@/services/api";
 import type { ReactNode } from "react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
 
 function getSeriesInfo(series?: CategoryOrSeries | string | null) {
   if (!series) return null;
+
   if (typeof series === "object") {
-    return { slug: series.slug, name: series.name || series.slug };
+    return {
+      slug: series.slug,
+      name: series.name || series.slug,
+    };
   }
-  return { slug: series, name: series };
+
+  return {
+    slug: series,
+    name: series,
+  };
 }
 
-function DetailMain({ children, loading }: { children: ReactNode; loading: boolean }) {
+function DetailMain({
+  children,
+  loading,
+}: {
+  children: ReactNode;
+  loading: boolean;
+}) {
   const ready = useContentReady(loading ? 99999 : 200);
+
   return (
-    <SkeletonOverlay ready={ready} skeleton={<ProductDetailSkeleton />}>
+    <SkeletonOverlay
+      ready={ready}
+      skeleton={<ProductDetailSkeleton />}
+    >
       {children}
     </SkeletonOverlay>
   );
 }
 
-function DetailHeading({ name, categoryName, loading }: { name?: string; categoryName?: string; loading: boolean }) {
+function DetailHeading({
+  name,
+  categoryName,
+  loading,
+}: {
+  name?: string;
+  categoryName?: string;
+  loading: boolean;
+}) {
   const ready = useContentReady(loading ? 99999 : 200);
+
   return (
     <SkeletonOverlay
       ready={ready}
@@ -57,16 +85,33 @@ function DetailHeading({ name, categoryName, loading }: { name?: string; categor
     >
       <div className="space-y-3 md:space-y-4">
         <nav className="flex text-xs md:text-sm text-textMuted space-x-2">
-          <Link className="hover:text-primary transition-colors" href="/">Home</Link>
+          <Link
+            className="hover:text-primary transition-colors"
+            href="/"
+          >
+            Home
+          </Link>
+
           <span>/</span>
-          <Link className="hover:text-primary transition-colors" href="/produk">Produk</Link>
+
+          <Link
+            className="hover:text-primary transition-colors"
+            href="/produk"
+          >
+            Produk
+          </Link>
+
           {categoryName && (
             <>
               <span>/</span>
-              <span className="text-primary font-medium">{categoryName}</span>
+
+              <span className="text-primary font-medium">
+                {categoryName}
+              </span>
             </>
           )}
         </nav>
+
         <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-xl md:text-3xl text-textDark">
           {name}
         </h1>
@@ -75,11 +120,20 @@ function DetailHeading({ name, categoryName, loading }: { name?: string; categor
   );
 }
 
-export default function DetailProdukPage({ params }: { params: Promise<{ slug: string }> }) {
+export default function DetailProdukPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = use(params);
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
+  // Tidak ada auto-select varian ketika halaman pertama kali dibuka.
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    null
+  );
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,11 +141,20 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
   const [loadingRecs, setLoadingRecs] = useState<boolean>(true);
 
   const [addingToCart, setAddingToCart] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const [toastMessage, setToastMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!toastMessage) return;
-    const timer = setTimeout(() => setToastMessage(null), 3000);
+
+    const timer = setTimeout(
+      () => setToastMessage(null),
+      3000
+    );
+
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
@@ -103,57 +166,49 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
 
       try {
         const productData = await getProductDetail(slug);
+
         setProduct(productData);
 
-        const activeVariants =
-          productData.variants?.filter(
-            (variant: ProductVariant) => variant.is_active
-          ) ?? [];
-
-        if (activeVariants.length > 0) {
-          const availableVariants = activeVariants.filter(
-            (variant) => variant.ready_stock > 0
-          );
-
-          if (availableVariants.length > 0) {
-            const variantWithMostStock = availableVariants.reduce(
-              (highest, current) =>
-                current.ready_stock > highest.ready_stock
-                  ? current
-                  : highest
-            );
-
-            setSelectedVariantId(variantWithMostStock.id);
-          } else {
-            setSelectedVariantId(null);
-          }
-        } else {
-          setSelectedVariantId(null);
-        }
+        // Jangan melakukan auto-select varian.
+        // selectedVariantId tetap null sampai user memilih sendiri.
       } catch (err: any) {
-        setError(err.message || "Terjadi kesalahan saat memuat data produk.");
+        setError(
+          err.message ||
+            "Terjadi kesalahan saat memuat data produk."
+        );
       } finally {
         setLoading(false);
       }
 
       try {
         const recs = await getProductRecommendations(slug);
+
         setRecommendations(recs);
       } catch (recErr) {
-        console.error("Gagal mengambil produk rekomendasi:", recErr);
+        console.error(
+          "Gagal mengambil produk rekomendasi:",
+          recErr
+        );
       } finally {
         setLoadingRecs(false);
       }
     }
 
-    if (slug) fetchData();
+    if (slug) {
+      fetchData();
+    }
   }, [slug]);
 
   const activeVariants =
-    product?.variants?.filter((variant) => variant.is_active) ?? [];
+    product?.variants?.filter(
+      (variant: ProductVariant) => variant.is_active
+    ) ?? [];
 
   const selectedVariant =
-    activeVariants.find((variant) => variant.id === selectedVariantId) ?? null;
+    activeVariants.find(
+      (variant: ProductVariant) =>
+        variant.id === selectedVariantId
+    ) ?? null;
 
   const hasVariants = activeVariants.length > 0;
 
@@ -169,6 +224,7 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
         type: "error",
         text: "Silakan pilih varian terlebih dahulu.",
       });
+
       return;
     }
 
@@ -177,6 +233,7 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
         type: "error",
         text: "Stok produk tidak mencukupi.",
       });
+
       return;
     }
 
@@ -192,7 +249,9 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
             product_id: product.id,
             quantity: 1,
             ...(selectedVariant
-              ? { product_variant_id: selectedVariant.id }
+              ? {
+                  product_variant_id: selectedVariant.id,
+                }
               : {}),
           }),
         }
@@ -202,11 +261,14 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
 
       if (!response.ok) {
         throw new Error(
-          resData.message || "Gagal menambahkan produk ke keranjang"
+          resData.message ||
+            "Gagal menambahkan produk ke keranjang"
         );
       }
 
-      window.dispatchEvent(new Event("cart-updated"));
+      window.dispatchEvent(
+        new Event("cart-updated")
+      );
 
       setToastMessage({
         type: "success",
@@ -226,131 +288,265 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
     }
   };
 
+  /*
+   * Media tetap diurutkan berdasarkan sort_order.
+   *
+   * selectedMediaId hanya digunakan ProductGallery
+   * untuk menentukan media mana yang ditampilkan ketika
+   * user memilih varian.
+   */
   const mediaList =
     product?.media && product.media.length > 0
-      ? product.media
+      ? [...product.media]
           .sort((a, b) => a.sort_order - b.sort_order)
           .map((m) => ({
+            id: m.id,
             type: m.media_type || "image",
             url: getImageUrl(m.url),
             alt: m.alt_text || product.name,
           }))
       : [
           {
+            id: "placeholder",
             type: "image",
             url: "/assets/img/placeholder.webp",
-            alt: product?.name || "Product Placeholder",
+            alt:
+              product?.name ||
+              "Product Placeholder",
           },
         ];
 
+  /*
+   * Jika belum memilih varian:
+   * -> gunakan harga parent product.
+   *
+   * Jika sudah memilih varian:
+   * -> gunakan harga varian.
+   */
   const displayPrice = product
-    ? product.discount_price > 0 ? product.discount_price : product.price
+    ? hasVariants && selectedVariant
+      ? selectedVariant.discount_price &&
+        selectedVariant.discount_price > 0
+        ? selectedVariant.discount_price
+        : selectedVariant.original_price
+      : product.discount_price > 0
+        ? product.discount_price
+        : product.price
     : 0;
 
   const seriesInfo = getSeriesInfo(product?.series);
 
   return (
-    <LegacyPage theme="shop" css={css} js="" bodyClassName="bg-bgLight text-textDark antialiased leading-relaxed font-[#Inter]">
+    <LegacyPage
+      theme="shop"
+      css={css}
+      js=""
+      bodyClassName="bg-bgLight text-textDark antialiased leading-relaxed font-[#Inter]"
+    >
       <>
         <Navbar />
+
         <main className="max-w-[1200px] mx-auto px-4 py-8 md:py-12">
           {error ? (
             <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg p-6 text-center my-12">
-              <span className="material-symbols-outlined text-4xl mb-2">error</span>
-              <p className="font-semibold text-lg">{error}</p>
-              <Link href="/produk" className="inline-block mt-4 bg-primary text-white px-4 py-2 rounded font-bold text-sm">
+              <span className="material-symbols-outlined text-4xl mb-2">
+                error
+              </span>
+
+              <p className="font-semibold text-lg">
+                {error}
+              </p>
+
+              <Link
+                href="/produk"
+                className="inline-block mt-4 bg-primary text-white px-4 py-2 rounded font-bold text-sm"
+              >
                 Kembali ke Katalog
               </Link>
             </div>
           ) : (
             <DetailMain loading={loading}>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+
                 {/* GALLERY COMPONENT */}
-                <ProductGallery mediaList={mediaList} />
+                <ProductGallery
+                  /*
+                   * key membuat ProductGallery melakukan
+                   * remount ketika media varian berubah.
+                   *
+                   * Ini membuat gambar varian langsung berpindah
+                   * ke media_id milik varian.
+                   */
+                  key={
+                    selectedVariant?.media_id ??
+                    "no-variant"
+                  }
+                  mediaList={mediaList}
+                  selectedMediaId={
+                    selectedVariant?.media_id ?? null
+                  }
+                />
 
                 {/* DETAIL & KONTROL PEMBELIAN */}
                 <div className="lg:sticky lg:top-28 self-start space-y-6 md:space-y-8">
                   <div className="space-y-3 md:space-y-4">
-                    <DetailHeading name={product?.name} categoryName={product?.category?.name} loading={loading} />
+
+                    <DetailHeading
+                      name={product?.name}
+                      categoryName={
+                        product?.category?.name
+                      }
+                      loading={loading}
+                    />
 
                     {seriesInfo?.slug && (
-                      <Link href={`/produk?series=${encodeURIComponent(seriesInfo.slug)}`} className="inline-flex items-center gap-1.5 text-primary text-xs md:text-sm font-semibold hover:underline">
-                        <span>Lihat series lainnya</span>
-                        <span className="material-symbols-outlined text-base md:text-lg">arrow_forward</span>
+                      <Link
+                        href={`/produk?series=${encodeURIComponent(
+                          seriesInfo.slug
+                        )}`}
+                        className="inline-flex items-center gap-1.5 text-primary text-xs md:text-sm font-semibold hover:underline"
+                      >
+                        <span>
+                          Lihat series lainnya
+                        </span>
+
+                        <span className="material-symbols-outlined text-base md:text-lg">
+                          arrow_forward
+                        </span>
                       </Link>
                     )}
 
+                    {/* PRICE */}
                     <div className="flex items-baseline space-x-3 md:space-x-4">
                       <p className="text-lg md:text-2xl font-bold text-secondary">
-                        {product?.formatted_price && product.formatted_price !== "Rp 0" ? product.formatted_price : formatRupiah(displayPrice)}
+                        {formatRupiah(displayPrice)}
                       </p>
-                      {product && product.original_price > displayPrice && (
-                        <>
-                          <span className="text-xs md:text-sm text-textMuted line-through">{formatRupiah(product.original_price)}</span>
-                          {product.discount_percentage && product.discount_percentage > 0 && (
-                            <span className="bg-[#FFECE8] text-secondary px-2 py-0.5 rounded text-[10px] md:text-xs font-bold">
-                              Promo {product.discount_percentage}%
-                            </span>
-                          )}
-                        </>
-                      )}
+
+                      {product &&
+                        (() => {
+                          const originalPrice =
+                            hasVariants &&
+                            selectedVariant
+                              ? selectedVariant.original_price
+                              : product.original_price;
+
+                          const discountPercentage =
+                            hasVariants &&
+                            selectedVariant
+                              ? selectedVariant.discount_percentage
+                              : product.discount_percentage;
+
+                          return (
+                            originalPrice >
+                              displayPrice && (
+                              <>
+                                <span className="text-xs md:text-sm text-textMuted line-through">
+                                  {formatRupiah(
+                                    originalPrice
+                                  )}
+                                </span>
+
+                                {discountPercentage &&
+                                  discountPercentage >
+                                    0 && (
+                                    <span className="bg-[#FFECE8] text-secondary px-2 py-0.5 rounded text-[10px] md:text-xs font-bold">
+                                      Promo{" "}
+                                      {
+                                        discountPercentage
+                                      }
+                                      %
+                                    </span>
+                                  )}
+                              </>
+                            )
+                          );
+                        })()}
                     </div>
+
+                    {/* VARIANTS */}
                     {hasVariants && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <p className="text-sm md:text-base font-bold text-textDark">
-                            Pilih Warna
+                            Pilih Varian
                           </p>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          {activeVariants.map((variant) => {
-                            const isSelected = selectedVariantId === variant.id;
-                            const isOutOfStock = variant.ready_stock <= 0;
+                          {activeVariants.map(
+                            (variant) => {
+                              const isSelected =
+                                selectedVariantId ===
+                                variant.id;
 
-                            return (
-                              <button
-                                key={variant.id}
-                                type="button"
-                                onClick={() => {
-                                  if (!isOutOfStock) {
-                                    setSelectedVariantId(variant.id);
-                                  }
-                                }}
-                                disabled={isOutOfStock}
-                                className={`
-                                  relative min-w-[90px] px-4 py-2.5 rounded-lg
-                                  border text-sm font-semibold transition-all
-                                  ${
-                                    isSelected
-                                      ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
-                                      : "border-borderColor bg-white text-textDark hover:border-primary"
-                                  }
-                                  ${
+                              const isOutOfStock =
+                                variant.ready_stock <=
+                                0;
+
+                              return (
+                                <button
+                                  key={variant.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (
+                                      !isOutOfStock
+                                    ) {
+                                      setSelectedVariantId(
+                                        variant.id
+                                      );
+                                    }
+                                  }}
+                                  disabled={
                                     isOutOfStock
-                                      ? "opacity-50 cursor-not-allowed line-through"
-                                      : ""
                                   }
-                                `}
-                              >
-                                {variant.name}
+                                  className={`
+                                    relative min-w-[90px] px-4 py-2.5 rounded-lg
+                                    border text-sm font-semibold transition-all
+                                    ${
+                                      isSelected
+                                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                                        : "border-borderColor bg-white text-textDark hover:border-primary"
+                                    }
+                                    ${
+                                      isOutOfStock
+                                        ? "opacity-50 cursor-not-allowed line-through"
+                                        : ""
+                                    }
+                                  `}
+                                >
+                                  {variant.name}
 
-                                {isOutOfStock && (
-                                  <span className="block text-[10px] font-normal mt-0.5 no-underline">
-                                    Stok habis
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
+                                  {isOutOfStock && (
+                                    <span className="block text-[10px] font-normal mt-0.5 no-underline">
+                                      Stok habis
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            }
+                          )}
                         </div>
                       </div>
                     )}
+
+                    {/* RATING + STOCK */}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       <div className="inline-flex items-center gap-2 bg-[#E8F7EE] text-[#1B7F4C] px-3 py-1.5 rounded-full">
-                        <span className="material-symbols-outlined text-base md:text-lg">inventory_2</span>
-                        <span className="text-xs md:text-sm font-bold">Rating {product?.average_rating || 0} ⭐ | Terjual {product?.total_sold || 0}+</span>
+                        <span className="material-symbols-outlined text-base md:text-lg">
+                          inventory_2
+                        </span>
+
+                        <span className="text-xs md:text-sm font-bold">
+                          Rating{" "}
+                          {product?.average_rating ||
+                            0}{" "}
+                          ⭐ | Terjual{" "}
+                          {product?.total_sold ||
+                            0}
+                          +
+                        </span>
                       </div>
+
                       {product && (
                         <span
                           className={`text-xs md:text-sm font-medium px-2.5 py-1 rounded-full ${
@@ -361,14 +557,17 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
                         >
                           {availableStock > 0
                             ? `Stok Tersedia: ${availableStock}`
-                            : hasVariants && !selectedVariant
+                            : hasVariants &&
+                                !selectedVariant
                               ? "Pilih Varian"
                               : "Stok Habis"}
                         </span>
                       )}
                     </div>
 
-                    <p className="text-xs md:text-sm text-textMuted leading-relaxed max-w-lg whitespace-pre-line">{product?.description}</p>
+                    <p className="text-xs md:text-sm text-textMuted leading-relaxed max-w-lg whitespace-pre-line">
+                      {product?.description}
+                    </p>
                   </div>
 
                   {/* ACTION BUTTONS */}
@@ -378,28 +577,42 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
                       disabled={
                         addingToCart ||
                         availableStock <= 0 ||
-                        (hasVariants && !selectedVariant)
+                        (hasVariants &&
+                          !selectedVariant)
                       }
                       className="w-full bg-secondary text-white text-sm md:text-base font-bold py-3.5 md:py-4 rounded hover:bg-opacity-90 transition-all flex items-center justify-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
                       {addingToCart ? (
                         <>
-                          <span className="material-symbols-outlined animate-spin text-base md:text-lg">progress_activity</span>
-                          <span>Menambahkan...</span>
+                          <span className="material-symbols-outlined animate-spin text-base md:text-lg">
+                            progress_activity
+                          </span>
+
+                          <span>
+                            Menambahkan...
+                          </span>
                         </>
                       ) : (
                         <>
-                          <span className="material-symbols-outlined">shopping_cart</span>
-                          <span>Masukkan Keranjang</span>
+                          <span className="material-symbols-outlined">
+                            shopping_cart
+                          </span>
+
+                          <span>
+                            Masukkan Keranjang
+                          </span>
                         </>
                       )}
                     </button>
+
                     <Link
                       href={
                         product?.id
                           ? `/checkout?mode=direct&product_id=${encodeURIComponent(
                               product.id
-                            )}&slug=${encodeURIComponent(slug)}&quantity=1${
+                            )}&slug=${encodeURIComponent(
+                              slug
+                            )}&quantity=1${
                               selectedVariant
                                 ? `&product_variant_id=${encodeURIComponent(
                                     selectedVariant.id
@@ -410,33 +623,48 @@ export default function DetailProdukPage({ params }: { params: Promise<{ slug: s
                       }
                       className={`w-full border-2 border-primary text-primary text-sm md:text-base font-bold py-3.5 md:py-4 rounded hover:bg-primary hover:text-white transition-all text-center ${
                         availableStock <= 0 ||
-                        (hasVariants && !selectedVariant)
+                        (hasVariants &&
+                          !selectedVariant)
                           ? "pointer-events-none opacity-50"
                           : ""
                       }`}
                     >
                       Beli Sekarang
                     </Link>
+
                     {product?.video_tutorial_url && (
                       <a
-                        href={product.video_tutorial_url}
+                        href={
+                          product.video_tutorial_url
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full border border-borderColor bg-white text-textDark text-xs md:text-sm font-medium py-3 rounded hover:bg-gray-50 hover:text-primary active:scale-[0.99] transition-all flex items-center justify-center space-x-2 shadow-sm"
                       >
-                        <span className="material-symbols-outlined text-[#FF0000]">play_circle</span>
-                        <span>Lihat Video Tutorial Pemasangan (YouTube)</span>
+                        <span className="material-symbols-outlined text-[#FF0000]">
+                          play_circle
+                        </span>
+
+                        <span>
+                          Lihat Video Tutorial
+                          Pemasangan (YouTube)
+                        </span>
                       </a>
                     )}
                   </div>
 
                   {/* ACCORDION COMPONENT */}
-                  <ProductAccordion product={product} />
+                  <ProductAccordion
+                    product={product}
+                  />
                 </div>
               </div>
 
               {/* RECOMMENDATIONS COMPONENT */}
-              <ProductRecommendations loading={loadingRecs} recommendations={recommendations} />
+              <ProductRecommendations
+                loading={loadingRecs}
+                recommendations={recommendations}
+              />
             </DetailMain>
           )}
         </main>
