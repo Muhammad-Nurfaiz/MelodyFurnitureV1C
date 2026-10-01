@@ -72,7 +72,7 @@ export function CatalogSidebarFilter({
 
       {/* Filter Kategori */}
       <div className="mb-6">
-        <div className="text-xs font-bold uppercase tracking-wider text-textMuted mb-3 pl-2">
+        <div className="text-sm font-bold uppercase tracking-wider mb-3 pl-2">
           Kategori Produk
         </div>
         <ul className="flex flex-col gap-1">
@@ -100,7 +100,7 @@ export function CatalogSidebarFilter({
 
       {/* Filter Series */}
       <div className="mb-6">
-        <div className="text-xs font-bold uppercase tracking-wider text-textMuted mb-3 pl-2">
+        <div className="text-sm font-bold uppercase tracking-wider mb-3 pl-2">
           Series Produk
         </div>
         <ul className="flex flex-col gap-1">
@@ -128,7 +128,7 @@ export function CatalogSidebarFilter({
 
       {/* Filter Promo Terbatas */}
       <div className="mb-4 pt-4 border-t border-borderColor">
-        <div className="text-xs font-bold uppercase tracking-wider text-textMuted mb-3 pl-2">
+        <div className="text-sm font-bold uppercase tracking-wider mb-3 pl-2">
           Penawaran Khusus
         </div>
         <label className="flex items-center justify-between px-3 py-2.5 bg-red-50 hover:bg-red-100/80 border border-red-200 rounded-md cursor-pointer transition select-none">

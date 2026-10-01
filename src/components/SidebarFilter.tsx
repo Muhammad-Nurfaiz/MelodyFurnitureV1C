@@ -47,7 +47,7 @@ export function SidebarFilter({
 
         {/* Kategori API */}
         <div className="mb-6">
-          <div className="text-[11px] md:text-xs font-bold uppercase tracking-wider text-textMuted mb-3 pl-2">
+          <div className="text-sm md:text-xs font-bold uppercase tracking-wider mb-3 pl-2">
             Kategori Produk
           </div>
           {isLoading ? (
@@ -76,7 +76,7 @@ export function SidebarFilter({
 
         {/* Series API */}
         <div className="mb-6">
-          <div className="text-[11px] md:text-xs font-bold uppercase tracking-wider text-textMuted mb-3 pl-2">
+          <div className="text-sm md:text-xs font-bold uppercase tracking-wider mb-3 pl-2">
             Series Produk
           </div>
           {isLoading ? (
@@ -105,7 +105,7 @@ export function SidebarFilter({
 
         {/* Program Spesial */}
         <div>
-          <div className="text-[11px] md:text-xs font-bold uppercase tracking-wider text-textMuted mb-3 pl-2">
+          <div className="text-sm md:text-xs font-bold uppercase tracking-wider mb-3 pl-2">
             Program Spesial
           </div>
           <ul className="flex flex-col gap-1">

@@ -32,20 +32,16 @@ const DUMMY_BANNERS: PromoBanner[] = [
 function getStorageUrl(path: string | undefined): string {
   if (!path) return "/placeholder-image.webp";
 
-  // 1. Unescape backslash (misal: \/storage\/... -> /storage/...)
   let cleanPath = path.replace(/\\/g, "");
 
-  // 2. Jika sudah berupa URL absolut (http/https), langsung kembalikan
   if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
     return cleanPath;
   }
 
-  // 3. Pastikan path diawali dengan slash /
   if (!cleanPath.startsWith("/")) {
     cleanPath = `/${cleanPath}`;
   }
 
-  // 4. Gabungkan dengan NEXT_PUBLIC_API_URL jika domain API terpisah (opsional)
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://187.53.138.70:8081";
   return `${baseUrl}${cleanPath}`;
 }
@@ -85,17 +81,17 @@ function PromoSkeleton({ perSlide, slidesCount }: { perSlide: number; slidesCoun
 
 interface PromoCarouselProps {
   banners?: PromoBanner[];
-  data?: PromoBanner[]; // Mendukung penggunaan prop data
+  data?: PromoBanner[];
 }
 
 export function PromoCarousel({ banners, data }: PromoCarouselProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const isMobile = useIsMobile();
   const perSlide = isMobile ? 1 : 2;
 
-  // Fallback menerima `data` atau `banners`, default ke DUMMY_BANNERS
   const rawBanners = data ?? banners ?? DUMMY_BANNERS;
 
   const sortedBanners = useMemo(() => {
@@ -130,15 +126,16 @@ export function PromoCarousel({ banners, data }: PromoCarouselProps) {
     [slides.length]
   );
 
+  // Auto-slide setiap 3 detik (3000ms)
   useEffect(() => {
-    if (!ready || slides.length <= 1) return;
+    if (!ready || slides.length <= 1 || isPaused) return;
 
     const interval = setInterval(() => {
       goTo(index + 1);
-    }, 15000);
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [goTo, index, ready, slides.length]);
+  }, [goTo, index, ready, slides.length, isPaused]);
 
   useEffect(() => {
     const track = trackRef.current;
@@ -183,6 +180,8 @@ export function PromoCarousel({ banners, data }: PromoCarouselProps) {
       role="region"
       aria-roledescription="carousel"
       aria-label="Banner Promo Melody"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
     >
       <style>{`#promoTrack::-webkit-scrollbar{display:none}#promoTrack{scrollbar-width:none;-ms-overflow-style:none}`}</style>
 
@@ -198,8 +197,7 @@ export function PromoCarousel({ banners, data }: PromoCarouselProps) {
           aria-label="Banner sebelumnya"
           aria-controls="promoTrack"
           onClick={() => goTo(index - 1)}
-          disabled={index <= 0}
-          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-20 w-11 h-11 items-center justify-center rounded-full bg-white shadow-lg border border-borderColor text-primary hover:bg-primary hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-primary"
+          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-20 w-11 h-11 items-center justify-center rounded-full bg-white shadow-lg border border-borderColor text-primary hover:bg-primary hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -251,8 +249,7 @@ export function PromoCarousel({ banners, data }: PromoCarouselProps) {
           aria-label="Banner berikutnya"
           aria-controls="promoTrack"
           onClick={() => goTo(index + 1)}
-          disabled={index >= slides.length - 1}
-          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-20 w-11 h-11 items-center justify-center rounded-full bg-white shadow-lg border border-borderColor text-primary hover:bg-primary hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-primary"
+          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-20 w-11 h-11 items-center justify-center rounded-full bg-white shadow-lg border border-borderColor text-primary hover:bg-primary hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
