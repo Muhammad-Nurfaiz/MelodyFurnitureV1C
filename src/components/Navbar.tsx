@@ -82,7 +82,7 @@ export function Navbar({ cartCount: initialCartCount }: NavbarProps) {
         <MobileNavToggle />
         <Link href="/" className="shrink-0">
           <img
-            src="/assets/img/LOGO MELODY BARU.png"
+            src="/assets/img/LOGO MELODY BARU.webp"
             alt="Melody Furniture Logo"
             className="w-[160px] sm:w-36 md:w-[190px] h-auto"
           />

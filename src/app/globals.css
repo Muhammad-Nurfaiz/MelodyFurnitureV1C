@@ -82,10 +82,27 @@ h1, h2, h3, h4, th {
   font-family: var(--font-heading);
 }
 
+@font-face {
+  font-family: "Material Symbols Outlined Local";
+  src: url("/fonts/material-symbols-outlined-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Material Symbols Outlined Local";
+  src: url("/fonts/material-symbols-outlined-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 .material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
+  font-family: "Material Symbols Outlined Local";
   font-weight: normal;
   font-style: normal;
+  font-size: 24px;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
