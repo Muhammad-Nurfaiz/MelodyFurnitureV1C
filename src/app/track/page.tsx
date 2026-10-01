@@ -187,7 +187,7 @@ function getTimelineIcon(status: string): string {
       return "check_circle";
 
     case "processing":
-      return "inventory";
+      return "inventory_2";
 
     case "picked_up":
       return "local_shipping";

@@ -73,11 +73,10 @@ export default function CartPage() {
 
   // Helper untuk normalisasi URL gambar
   const getImageUrl = (path?: string) => {
-    if (!path) return "/placeholder.jpg"; // Gambar fallback jika path kosong
+    if (!path) return "/placeholder.jpg";
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
-    // Menghilangkan slash ganda jika path diawali dengan '/'
     const cleanPath = path.startsWith("/") ? path.substring(1) : path;
     return `${API_BASE_URL_MEDIA}/${cleanPath}`;
   };
@@ -108,18 +107,12 @@ export default function CartPage() {
             (item: CartItem) => item.id
           );
 
-          // Load cart pertama kali:
-          // semua item dipilih.
           if (!hasInitializedSelection.current) {
             hasInitializedSelection.current = true;
             return itemIds;
           }
 
-          // Setelah itu, pertahankan pilihan user.
-          // Jika item sudah tidak ada karena dihapus,
-          // otomatis keluarkan dari selection.
           const validIds = new Set(itemIds);
-
           return current.filter((id) => validIds.has(id));
         });
       }
@@ -178,8 +171,6 @@ export default function CartPage() {
 
       if (res.ok) {
         await fetchCart();
-
-        // Dispatch event agar Navbar memperbarui badge count
         window.dispatchEvent(new Event("cart-updated"));
       }
     } catch (err) {
@@ -191,7 +182,6 @@ export default function CartPage() {
   const fetchRecommendations = async () => {
     setLoadingRecs(true);
     try {
-      // 1. Hapus parameter limit=4 dari URL
       const res = await fetch(`${API_BASE_URL}/products`, {
         headers: {
           "Accept": "application/json",
@@ -200,10 +190,7 @@ export default function CartPage() {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const json = await res.json();
       
-      // Ambil array produk
       const productsData = json.data?.data || json.data || json || [];
-      
-      // 2. Simpan semua data tanpa .slice(0, 4)
       setRecommendations(Array.isArray(productsData) ? productsData : []);
     } catch (err) {
       console.error("Gagal mengambil rekomendasi produk:", err);
@@ -269,7 +256,8 @@ export default function CartPage() {
                 ) : (
                   cart.items.map((item) => (
                     <div key={item.id} className="p-4 sm:p-6 flex items-start gap-3 sm:gap-4 md:gap-6">
-                      <div className="pt-2 sm:pt-4">
+                      {/* Checkbox */}
+                      <div className="pt-1 sm:pt-2">
                         <input
                           type="checkbox"
                           checked={selectedItemIds.includes(item.id)}
@@ -284,6 +272,7 @@ export default function CartPage() {
                         />
                       </div>
 
+                      {/* Image Thumbnail */}
                       <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 flex-shrink-0 bg-surface-container-low rounded-lg overflow-hidden border border-border-subtle">
                         <img
                           alt={
@@ -298,24 +287,37 @@ export default function CartPage() {
                         />
                       </div>
 
-                      <div className="flex-grow flex flex-col justify-between gap-3 min-h-[5rem] sm:min-h-[7rem]">
-                        <div className="flex flex-col md:flex-row md:justify-between gap-1 md:gap-4">
-                          <h3 className="text-sm sm:text-base md:text-lg font-bold text-textDark leading-snug line-clamp-2">
-                            {item.product.name}
-                          </h3>
-                          {item.product_variant && (
-                            <p className="mt-1 text-xs sm:text-sm text-textMuted">
-                              Varian:{" "}
-                              <span className="font-semibold text-textDark">
-                                {item.product_variant.name}
-                              </span>
+                      {/* Content Wrapper */}
+                      <div className="flex-grow flex flex-col justify-between gap-4 min-w-0">
+                        {/* Grid info produk & varian/harga */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-start">
+                          {/* Nama Produk & Varian */}
+                          <div className="md:col-span-8 min-w-0">
+                            <h3 
+                              className="text-sm sm:text-base md:text-lg font-bold text-textDark leading-snug line-clamp-2"
+                              title={item.product.name}
+                            >
+                              {item.product.name}
+                            </h3>
+                            {item.product_variant && (
+                              <p className="mt-1 text-xs sm:text-sm text-textMuted">
+                                Varian:{" "}
+                                <span className="font-semibold text-textDark">
+                                  {item.product_variant.name}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Harga Produk */}
+                          <div className="md:col-span-4 md:text-right">
+                            <p className="text-sm sm:text-base md:text-lg font-bold text-secondary whitespace-nowrap">
+                              {formatRupiah(item.subtotal)}
                             </p>
-                          )}
-                          <p className="text-sm sm:text-base md:text-lg font-bold text-secondary whitespace-nowrap">
-                            {formatRupiah(item.subtotal)}
-                          </p>
+                          </div>
                         </div>
 
+                        {/* Tombol Hapus & Kontrol Kuantitas */}
                         <div className="flex items-center justify-between pt-2">
                           <button
                             onClick={() => handleDeleteItem(item.id)}
@@ -427,7 +429,6 @@ export default function CartPage() {
 
             {loadingRecs ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-                {/* Diubah dari 4 menjadi 8 atau sesuaikan untuk skeleton */}
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="h-64 bg-gray-200 animate-pulse rounded-lg" />
                 ))}
