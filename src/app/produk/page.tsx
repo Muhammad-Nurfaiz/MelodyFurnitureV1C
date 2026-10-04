@@ -296,7 +296,6 @@ function CatalogContent() {
               onSelectSeries={handleSeriesChange}
               onToggleSale={handleSaleToggle}
               onReset={handleReset}
-              onClose={() => setIsFilterOpen(false)}
             />
           </aside>
 
@@ -326,6 +325,7 @@ function CatalogContent() {
                     onSelectSeries={handleSeriesChange}
                     onToggleSale={handleSaleToggle}
                     onReset={handleReset}
+                    onClose={() => setIsFilterOpen(false)}
                   />
                 </div>
                 <button
