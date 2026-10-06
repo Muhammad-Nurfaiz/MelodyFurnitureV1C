@@ -13,6 +13,7 @@ import { requestWithGuestSession } from "@/lib/guestSession";
 import { getProductDetail } from "@/services/api";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import type { ProductMedia } from "@/types";
 
 export type CheckoutFields = {
@@ -1123,6 +1124,7 @@ export function PlaceOrderButton() {
     voucherCode,
     selectedItemIds,
     cartItems,
+    cartSubtotal,
     checkoutMode,
     directItem,
     setError,
@@ -1201,6 +1203,50 @@ export function PlaceOrderButton() {
         checkoutMode === "direct"
           ? "/checkout/direct"
           : "/checkout";
+
+      const checkoutItems =
+        checkoutMode === "direct"
+          ? [
+              {
+                id:
+                  directItem!.product_variant_id ??
+                  directItem!.product_id,
+                quantity: directItem!.quantity,
+                item_price:
+                  directItem!.subtotal /
+                  directItem!.quantity,
+              },
+            ]
+          : cartItems.map((item) => ({
+              id:
+                item.product_variant?.id ??
+                item.product.id,
+              quantity: item.quantity,
+              item_price: item.unit_price,
+            }));
+
+      const checkoutValue =
+        checkoutMode === "direct"
+          ? directItem!.subtotal
+          : cartSubtotal;
+
+      trackMetaEvent("InitiateCheckout", {
+        content_ids: checkoutItems.map(
+          (item) => item.id
+        ),
+        content_type: "product",
+        num_items: checkoutItems.reduce(
+          (total, item) => total + item.quantity,
+          0
+        ),
+        value: checkoutValue,
+        currency: "IDR",
+        contents: checkoutItems.map((item) => ({
+          id: item.id,
+          quantity: item.quantity,
+          item_price: item.item_price,
+        })),
+      });
 
       const response = await requestWithGuestSession(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}${endpoint}`,

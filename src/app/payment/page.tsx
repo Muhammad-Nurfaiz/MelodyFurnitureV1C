@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LegacyPage } from "@/components/LegacyPage";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { css, js } from "@/legacy/payment.legacy";
 
 function PaymentPageContent() {
@@ -17,6 +18,78 @@ function PaymentPageContent() {
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [totalPayment, setTotalPayment] = useState<number>(0);
+
+  const trackPurchaseIfNeeded = (paymentResult: any) => {
+    if (!trackingToken) {
+      return;
+    }
+
+    if (paymentResult?.status !== "paid") {
+      return;
+    }
+
+    const items = Array.isArray(paymentResult.items)
+      ? paymentResult.items
+      : [];
+
+    const totalPayment =
+      Number(paymentResult.total_payment) || 0;
+
+    if (!items.length || totalPayment <= 0) {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storageKey =
+      `melody_meta_purchase_${trackingToken}`;
+
+    // Jangan kirim Purchase lebih dari sekali
+    if (localStorage.getItem(storageKey) === "1") {
+      return;
+    }
+
+    // Pastikan Meta Pixel sudah tersedia
+    if (typeof window.fbq !== "function") {
+      return;
+    }
+
+    trackMetaEvent("Purchase", {
+      content_ids: items.map(
+        (item: any) =>
+          item.product_variant_id ??
+          item.product_id
+      ),
+
+      content_type: "product",
+
+      num_items: items.reduce(
+        (total: number, item: any) =>
+          total + Number(item.quantity || 0),
+        0
+      ),
+
+      value: totalPayment,
+
+      currency: "IDR",
+
+      contents: items.map((item: any) => ({
+        id:
+          item.product_variant_id ??
+          item.product_id,
+
+        quantity: Number(item.quantity || 0),
+
+        item_price: Number(
+          item.unit_price || 0
+        ),
+      })),
+    });
+
+    localStorage.setItem(storageKey, "1");
+  };
 
   // Fungsi helper untuk menyapu bersih seluruh setInterval & setTimeout legacy
   const stopAllLegacyTimers = () => {
@@ -177,6 +250,39 @@ function PaymentPageContent() {
       cancelled = true;
     };
   }, [trackingToken, fromMidtrans]);
+
+  useEffect(() => {
+    if (!isPaid || !trackingToken) {
+      return;
+    }
+
+    const loadPurchaseData = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/payment/result/${trackingToken}`
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const result = await response.json();
+
+        if (result?.data?.status !== "paid") {
+          return;
+        }
+
+        trackPurchaseIfNeeded(result.data);
+      } catch (error) {
+        console.error(
+          "Gagal memproses Meta Purchase:",
+          error
+        );
+      }
+    };
+
+    loadPurchaseData();
+  }, [isPaid, trackingToken]);
 
   const checkPaymentResult = async () => {
     if (!trackingToken) {

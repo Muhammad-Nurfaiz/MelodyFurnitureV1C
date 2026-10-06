@@ -22,6 +22,7 @@ import { requestWithGuestSession } from "@/lib/guestSession";
 import { getImageUrl, formatRupiah } from "@/lib/utils";
 import { Product, ProductVariant, CategoryOrSeries } from "@/types";
 import { getProductDetail, getProductRecommendations } from "@/services/api";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import type { ReactNode } from "react";
 
 const API_BASE_URL =
@@ -169,6 +170,17 @@ export default function DetailProdukPage({
 
         setProduct(productData);
 
+        trackMetaEvent("ViewContent", {
+          content_ids: [productData.id],
+          content_type: "product",
+          content_name: productData.name,
+          value:
+            productData.discount_price > 0
+              ? productData.discount_price
+              : productData.price,
+          currency: "IDR",
+        });
+
         // Jangan melakukan auto-select varian.
         // selectedVariantId tetap null sampai user memilih sendiri.
       } catch (err: any) {
@@ -265,6 +277,18 @@ export default function DetailProdukPage({
             "Gagal menambahkan produk ke keranjang"
         );
       }
+
+      trackMetaEvent("AddToCart", {
+        content_ids: [
+          selectedVariant?.id ?? product.id,
+        ],
+        content_type: "product",
+        content_name: selectedVariant
+          ? `${product.name} - ${selectedVariant.name}`
+          : product.name,
+        value: displayPrice,
+        currency: "IDR",
+      });
 
       window.dispatchEvent(
         new Event("cart-updated")
