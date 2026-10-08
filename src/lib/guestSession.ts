@@ -4,38 +4,58 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://127.0.0.1:8000/api";
 
+let guestSessionPromise: Promise<string | null> | null = null;
+
 export const initGuestSession = async (): Promise<string | null> => {
-  let sessionId = localStorage.getItem("guest_session_id");
+  const existingSessionId = localStorage.getItem("guest_session_id");
 
-  if (sessionId) {
-    return sessionId;
+  if (existingSessionId) {
+    return existingSessionId;
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/customer/session`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
+  if (guestSessionPromise) {
+    return guestSessionPromise;
+  }
 
-    if (response.ok) {
-      const resData = await response.json();
-      
-      // Ambil token resmi yang dibuat oleh Laravel
-      sessionId = resData?.data?.guest_token || resData?.data?.guest_session_id;
+  guestSessionPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/customer/session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
 
-      if (sessionId) {
-        localStorage.setItem("guest_session_id", sessionId);
-        return sessionId;
+      if (response.ok) {
+        const resData = await response.json();
+
+        const sessionId =
+          resData?.data?.guest_token ||
+          resData?.data?.guest_session_id;
+
+        if (sessionId) {
+          localStorage.setItem(
+            "guest_session_id",
+            sessionId
+          );
+
+          return sessionId;
+        }
       }
+    } catch (error) {
+      console.error(
+        "Gagal mendapatkan guest session dari Laravel:",
+        error
+      );
+    } finally {
+      guestSessionPromise = null;
     }
-  } catch (error) {
-    console.error("Gagal mendapatkan guest session dari Laravel:", error);
-  }
 
-  return null;
+    return null;
+  })();
+
+  return guestSessionPromise;
 };
 
 export const refreshGuestSession = async (): Promise<string | null> => {

@@ -1,4 +1,5 @@
 import { HeroSlide, CategoryOrSeriesItem, Product, CatalogData } from "@/types";
+import { initGuestSession } from "@/lib/guestSession";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
@@ -27,24 +28,7 @@ export async function fetchWithAuth<T>(endpoint: string, token: string): Promise
 }
 
 export async function getCustomerToken(): Promise<string> {
-  let token = typeof window !== "undefined" ? localStorage.getItem("guest_session_id") : null;
-  
-  if (!token) {
-    const sessionRes = await fetch(`${API_BASE_URL}/customer/session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-    });
-    
-    if (sessionRes.ok) {
-      const sessionData = await sessionRes.json();
-      token = sessionData.data?.guest_token || sessionData.guest_token || "";
-      if (token && typeof window !== "undefined") {
-        localStorage.setItem("guest_session_id", token);
-      }
-    }
-  }
-
-  return token || "";
+  return (await initGuestSession()) || "";
 }
 
 export async function getProductDetail(slug: string): Promise<Product> {
